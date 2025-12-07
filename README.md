@@ -61,8 +61,8 @@ Clone the repository:
 
 Bash
 
-git clone https://github.com/YOUR_ACCOUNT/YOUR_REPOSITORY.git
-cd YOUR_REPOSITORY
+git clone https://github.com/Arccalc/arccalc.github.io
+cd arccalc.github.io
 Ensure you have all the files (specifically index.html and the img folder with icons).
 
 Open the index.html file in your favorite web browser.
