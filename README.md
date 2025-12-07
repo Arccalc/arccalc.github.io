@@ -69,7 +69,7 @@ Open the index.html file in your favorite web browser.
 
 🌐 Live Demo (Рабочая версия): Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io/
 
-Folder Structure
+### Folder Structure
 .
 ├── img/                       # Folder with icons for resources and items
 ├── index.html                 # Main calculator file (contains HTML/CSS/JS)
