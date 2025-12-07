@@ -60,7 +60,7 @@ Ensure you have all the files (specifically index.html and the img folder with i
 
 Open the index.html file in your favorite web browser.
 
-🌐 Live Demo (Рабочая версия): Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io
+🌐 Live Demo: Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io
 
 ## Folder Structure
 
