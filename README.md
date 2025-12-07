@@ -27,32 +27,61 @@ CSS3: Completely custom, neon, and responsive design (using CSS Variables to man
 JavaScript (Vanilla JS): Logic for calculations, state management (crafting goals and inventory) via Local Storage, and rendering of the entire interface.
 
 ### 🌐 How to Use
-Set Crafting Goals:
 
-In the left panel under "Crafting Goals", select the items you want to create (e.g., Ferro or Combat Mark 3).
+📌 1) Set Crafting Goals
 
-Use the [+] and [-] buttons or enter the quantity manually.
+This defines what you want to build.
 
-Enter My Inventory:
+Go to Crafting Goals (left panel)
 
-Switch to the "My Inventory" tab.
+Choose one or several target items
 
-Enter the quantity of base resources (e.g., Metal Parts, Chemicals, Fabric) you already possess. Your data is saved automatically.
+Adjust quantities using:
 
-Check the Output:
+➕ and ➖ buttons, or
 
-In the right panel, "Total Base Resources Needed", you will see a list of all necessary raw resources.
+Enter values manually
 
-Red color indicates resources that are missing (compared to your inventory).
+📦 2) Enter Your Inventory
 
-Green color indicates that you have enough resources.
+This tells the app what resources you already have.
 
-View Details:
+Open the "My Inventory" tab
 
-Expand the "Total Crafting Ingredients" sections to view a list of all intermediate components.
+Enter how many raw resources you currently own
+(e.g., Metal Parts, Fabric, Chemicals, etc.)
 
-Expand "Detailed Recipe Breakdown" to view an interactive recipe tree to understand what makes up each of your items.
+Your data is saved automatically
 
+📊 3) Check Total Resource Requirements
+
+This shows the full list of needed base resources.
+
+Look at the right panel: “Total Base Resources Needed”
+
+Colors indicate resource balance:
+
+🟥 Red = Missing / you don’t have enough
+
+🟩 Green = You’re covered
+
+🔍 4) See Detailed Crafting Breakdown
+
+This helps understand what intermediate items are needed.
+
+Expand “Total Crafting Ingredients”
+(shows all intermediate components you must craft)
+
+Expand “Detailed Recipe Breakdown”
+(shows full dependency chains — root → subcomponents → base resources)
+
+🧠 Why This Is Useful
+
+Helps determine what to farm
+
+Prevents wasted stash space
+
+Supports planning complex multi-level crafting chains
 ### ⚙️ Installation and Setup
 The project is a standalone HTML file, making it easy to deploy.
 
