@@ -1,12 +1,12 @@
 ### ARC Raiders // Advanced Resource Calculator
 A tool for crafting calculations and efficient resource management.
 
-### 🌌 About the Project
+## 🌌 About the Project
 ARC Raiders // Advanced Resource Calculator is an interactive web tool designed to simplify the crafting process in the game, where players must collect basic materials to create complex gear, weapons, and consumables.
 
 The calculator automatically computes the total amount of raw (base) resources needed to achieve set goals and compares this against your inventory. This functionality is crucial for optimizing inventory space and helps you plan for the future. It ensures you only gather the materials you are truly missing, avoiding unnecessary resource clutter, and is designed so you know exactly how much of a particular material you should store for future crafting or your next raid. With this tool, you always know exactly what to prioritize.
 
-### ✨ Key Features
+## ✨ Key Features
 Base Resource Calculation: Automatically breaks down complex crafting into the most basic raw materials.
 
 Inventory Tracking & Space Optimization: Save your current inventory (using localStorage) and see how many resources you are truly missing. This prevents resource hoarding, helps optimize your limited inventory space, and gives you a clear indication of resource storage priorities for future raids.
@@ -17,7 +17,7 @@ Neon UI: A stylish and high-contrast, sci-fi interface inspired by cyberpunk/ret
 
 Search and Filtering: Quickly search for any item to add to your goals or check its presence in your inventory.
 
-### 🛠️ Technologies
+## 🛠️ Technologies
 The project is built using a minimalist stack:
 
 HTML5: Web page structure.
@@ -45,13 +45,13 @@ This helps understand dependencies. **Expand “Total Crafting Ingredients”** 
 ### 🧠 Why This Is Useful
 This tool is essential for every raid by **optimizing gathering priority**, **maximizing inventory efficiency**, and **supporting complex multi-level crafting chains**.
 
-### ⚙️ Installation and Setup
+## ⚙️ Installation and Setup
 The project is a standalone HTML file, making it easy to deploy.
 
 For Local Launch
 Clone the repository:
 
-### Bash
+## Bash
 ```
 git clone https://github.com/Arccalc/arccalc.github.io
 cd arccalc.github.io
@@ -62,7 +62,7 @@ Open the index.html file in your favorite web browser.
 
 🌐 Live Demo (Рабочая версия): Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io
 
-### Folder Structure
+## Folder Structure
 
 ```
 ├── img/ # Folder with icons for resources and items
