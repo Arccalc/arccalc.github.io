@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ARC Raiders // Advanced Resource Calculator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<a href='https://ko-fi.com/U7U21PU1TF' target='_blank' class="kofi-widget" aria-label="Support via Ko-fi">
+    <img src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' alt='Buy Me a Coffee' />
+</a>
+
+<div class="container">
+    <h1 class="main-title">ARC Raiders // Advanced Resource Calculator</h1>
+
+    <div class="panel" id="input-panel">
+        <h2 class="panel-title">Data Input</h2>
+        <input type="text" id="search-input" placeholder="Search item or resource...">
+        
+        <div id="goals-controls" class="tab-content active">
+             <button id="reset-button" aria-label="Reset all item quantities to zero.">RESET ALL CRAFTING</button>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="craft-goals">Crafting Goals</button>
+            <button class="tab-btn" data-tab="inventory-input">My Inventory</button>
+        </div>
+        
+        <div class="panel-content">
+            <div id="craft-goals" class="tab-content active">
+                <div id="items-container"></div>
+            </div>
+            <div id="inventory-input" class="tab-content">
+                <button id="reset-inventory-btn" aria-label="Reset all inventory quantities to zero.">RESET INVENTORY</button>
+                <div id="inventory-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" id="output-panel">
+        <h2 class="panel-title total-header">Total Base Resources Needed</h2>
+        <div class="panel-content">
+            <ul id="base-total-list"> 
+                <div class="empty-state">Select items to calculate...</div>
+            </ul>
+
+            <h2 class="panel-title accordion-title collapsed" data-target="craft-total-content">
+                Total Crafting Ingredients
+                <span class="toggle-icon">▶</span> 
+            </h2>
+            <div id="craft-total-content" class="accordion-content collapsed">
+                <div class="accordion-content-inner"> 
+                    <ul id="craft-total-list">
+                        <div class="empty-state">No intermediate materials needed.</div>
+                    </ul>
+                </div>
+            </div>
+            
+            <h2 class="panel-title accordion-title collapsed" data-target="recipe-breakdown-content">
+                Detailed Recipe Breakdown
+                <span class="toggle-icon">▶</span> 
+            </h2>
+            <div id="recipe-breakdown-content" class="accordion-content collapsed">
+                 <div class="accordion-content-inner"> 
+                    <ul id="recipe-breakdown-list">
+                        <div class="empty-state">Details will appear after selection...</div>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="items.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
