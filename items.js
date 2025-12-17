@@ -174,6 +174,100 @@ const CATEGORY_EMOJIS = {
     'Utility': '🛠️', 'Gear Sets': '🛡️', 'Shields': '💠', 'Medical': '🩹', 'Refiner': '⚙️',
 };
 
+// --- ДАННЫЕ АПГРЕЙДОВ ОРУЖИЯ (Tier II, III, IV) ---
+const WEAPON_UPGRADES = {
+    'Ferro': {
+        2: { 'Metal Parts': 7 },
+        3: { 'Metal Parts': 9, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 }
+    },
+    'Hairpin': {
+        2: { 'Metal Parts': 8 },
+        3: { 'Metal Parts': 6, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 }
+    },
+    'Kettle': {
+        2: { 'Metal Parts': 8, 'Plastic Parts': 10 },
+        3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Stitcher': {
+        2: { 'Metal Parts': 8, 'Rubber Parts': 12 },
+        3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Rattler': {
+        2: { 'Mechanical Components': 2 },
+        3: { 'Mechanical Components': 2, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Anvil': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }
+    },
+    'Arpeggio': {
+        2: { 'Mechanical Components': 4, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 },
+        4: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 }
+    },
+    'Burletta': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Light Gun Parts': 1 }
+    },
+    'Il Toro': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }
+    },
+    'Torrente': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Osprey': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Venator': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Renegade': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Bettina': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 2 }
+    },
+    'Tempest': {
+        2: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 1 },
+        3: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 }
+    },
+    'Bobcat': {
+        2: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 1 },
+        3: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 },
+        4: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 }
+    },
+    'Vulcano': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 }
+    },
+    'Hullcracker': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 }
+    }
+};
+
 const ALL_CRAFT_DATA = {};
 const ALL_ITEMS_FLAT = {}; 
 const BASE_RESOURCES = new Set();
@@ -181,7 +275,6 @@ const CRAFTABLE_ITEMS = new Set();
 
 function getIconHtml(itemName) {
     if (IMAGE_MAP[itemName]) {
-        // МЫ ДОБАВИЛИ ПРЕФИКС "img/"
         return `<img src="img/${IMAGE_MAP[itemName]}" class="item-icon" alt="${itemName}">`;
     }
     return ''; 
