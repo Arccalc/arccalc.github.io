@@ -1,7 +1,16 @@
-const STATE_KEYS = { SELECTION: 'arcRaidersSelection', INVENTORY: 'arcRaidersInventory' };
+const STATE_KEYS = {
+    SELECTION: 'arcRaidersSelection',
+    INVENTORY: 'arcRaidersInventory'
+};
 
+// Структура userSelection: { "Ferro": 1, "Ferro|3": 2, "Ferro|4": 1 }
 let userSelection = JSON.parse(localStorage.getItem(STATE_KEYS.SELECTION) || '{}');
 let userInventory = JSON.parse(localStorage.getItem(STATE_KEYS.INVENTORY) || '{}');
+
+// Временное состояние для UI (какой квадрат сейчас подсвечен у пользователя)
+let uiActiveTiers = {};
+
+const ROMAN_NUMERALS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
 
 function getRecipe(itemName) {
     for (const category in ALL_CRAFT_DATA) {
@@ -11,20 +20,33 @@ function getRecipe(itemName) {
 }
 function isCraftable(itemName) { return CRAFTABLE_ITEMS.has(itemName); }
 
+// Хелпер для создания ключа
+function getKey(item, tier) {
+    return tier > 1 ? `${item}|${tier}` : item;
+}
+
+// Хелпер для разбора ключа
+function parseKey(key) {
+    const parts = key.split('|');
+    return {
+        name: parts[0],
+        tier: parts.length > 1 ? parseInt(parts[1]) : 1
+    };
+}
+
 function getBaseResources(itemName, quantity, totalNeeded = {}) {
     if (BASE_RESOURCES.has(itemName)) {
         totalNeeded[itemName] = (totalNeeded[itemName] || 0) + quantity;
         return totalNeeded;
     }
     const recipe = getRecipe(itemName);
-    if (!recipe) return totalNeeded; 
+    if (!recipe) return totalNeeded;
     for (const [ingredient, neededQty] of Object.entries(recipe)) {
         getBaseResources(ingredient, neededQty * quantity, totalNeeded);
     }
     return totalNeeded;
 }
 
-// РЕКУРСИВНЫЙ ПОДСЧЕТ ПРОМЕЖУТОЧНЫХ КОМПОНЕНТОВ
 function getIntermediateRecursive(itemName, quantity, totalNeeded = {}) {
     const recipe = getRecipe(itemName);
     if (!recipe) return totalNeeded;
@@ -40,21 +62,59 @@ function getIntermediateRecursive(itemName, quantity, totalNeeded = {}) {
 
 function getIntermediateTotals() {
     let intermediateTotals = {};
-    for (const [item, qty] of Object.entries(userSelection)) {
-          if (qty > 0 && isCraftable(item)) {
-             getIntermediateRecursive(item, qty, intermediateTotals);
+    for (const [key, qty] of Object.entries(userSelection)) {
+         if (qty > 0) {
+             const { name, tier } = parseKey(key);
+
+             if (isCraftable(name)) {
+                 // 1. Базовые компоненты
+                 getIntermediateRecursive(name, qty, intermediateTotals);
+
+                 // 2. Апгрейды
+                 if (tier > 1 && WEAPON_UPGRADES[name]) {
+                     for (let t = 2; t <= tier; t++) {
+                         const upgradeRecipe = WEAPON_UPGRADES[name][t];
+                         if (upgradeRecipe) {
+                             for (const [upgItem, upgQty] of Object.entries(upgradeRecipe)) {
+                                 if (isCraftable(upgItem)) {
+                                     const uQty = upgQty * qty;
+                                     intermediateTotals[upgItem] = (intermediateTotals[upgItem] || 0) + uQty;
+                                     getIntermediateRecursive(upgItem, uQty, intermediateTotals);
+                                 }
+                             }
+                         }
+                     }
+                 }
+             }
          }
     }
     return intermediateTotals;
 }
 
 function calculateTotal() {
-    let grandTotal = {}; 
-    for (const [item, qty] of Object.entries(userSelection)) {
-        if (qty > 0) getBaseResources(item, qty, grandTotal);
+    let grandTotal = {};
+    for (const [key, qty] of Object.entries(userSelection)) {
+        if (qty > 0) {
+            const { name, tier } = parseKey(key);
+
+            // 1. Считаем базу (Всегда нужна)
+            getBaseResources(name, qty, grandTotal);
+
+            // 2. Считаем апгрейды (если уровень > 1)
+            if (tier > 1 && WEAPON_UPGRADES[name]) {
+                for (let t = 2; t <= tier; t++) {
+                    const upgradeRecipe = WEAPON_UPGRADES[name][t];
+                    if (upgradeRecipe) {
+                        for (const [upgItem, upgQty] of Object.entries(upgradeRecipe)) {
+                            getBaseResources(upgItem, upgQty * qty, grandTotal);
+                        }
+                    }
+                }
+            }
+        }
     }
-    const intermediateTotals = getIntermediateTotals(); 
-    renderBaseTotal(grandTotal); 
+    const intermediateTotals = getIntermediateTotals();
+    renderBaseTotal(grandTotal);
     renderIntermediateTotals(intermediateTotals);
     renderRecipeBreakdown();
     localStorage.setItem(STATE_KEYS.SELECTION, JSON.stringify(userSelection));
@@ -90,8 +150,7 @@ function renderBaseTotal(grandTotal) {
         const neededQty = Math.max(0, requiredQty - inventoryQty);
         const statusClass = neededQty > 0 ? 'missing-resource' : 'enough-resource';
         const li = document.createElement('li');
-        
-        // ВСТАВКА ИКОНКИ
+
         li.innerHTML = `
             <div class="item-wrapper">
                 ${getIconHtml(resName)}
@@ -116,7 +175,6 @@ function renderIntermediateTotals(intermediateTotals) {
     }
     for (const [itemName, totalQty] of intermediateItems) {
         const li = document.createElement('li');
-        // ВСТАВКА ИКОНКИ
         li.innerHTML = `
             <div class="item-wrapper">
                 ${getIconHtml(itemName)}
@@ -130,21 +188,103 @@ function renderIntermediateTotals(intermediateTotals) {
 function renderRecipeBreakdown() {
     const innerList = elements.recipeBreakdownContent.querySelector('.accordion-content-inner ul');
     innerList.innerHTML = '';
-    const selectedItems = Object.entries(userSelection).filter(([item, qty]) => qty > 0);
-    if (selectedItems.length === 0) {
+    const selectedKeys = Object.entries(userSelection).filter(([key, qty]) => qty > 0);
+
+    if (selectedKeys.length === 0) {
         innerList.innerHTML = '<div class="empty-state">Details will appear after selection...</div>';
         return;
     }
+
+    // Сортируем: Сначала по имени, потом по уровню
+    selectedKeys.sort((a, b) => {
+        const keyA = parseKey(a[0]);
+        const keyB = parseKey(b[0]);
+        if (keyA.name !== keyB.name) return keyA.name.localeCompare(keyB.name);
+        return keyA.tier - keyB.tier;
+    });
+
     const outerUl = document.createElement('ul');
-    selectedItems.forEach(([itemName, itemQty]) => {
+
+    selectedKeys.forEach(([key, itemQty]) => {
+        const { name: itemName, tier } = parseKey(key);
+
         const mainLi = document.createElement('li');
         const header = document.createElement('h4');
-        // ВСТАВКА ИКОНКИ В ЗАГОЛОВОК
-        header.innerHTML = `<div class="item-wrapper" style="display:inline-flex; vertical-align:middle">${getIconHtml(itemName)} ${itemName} (x${itemQty})</div>`;
+
+        // --- ИСПРАВЛЕННЫЙ ЗАГОЛОВОК ---
+        // 1. Убрали "MK".
+        // 2. Сделали римскую цифру жирной и чуть больше для видимости.
+        // 3. Добавили явные отступы (margin) для цифры и для количества (xN).
+        const tierHtml = tier > 1
+            ? `<span style="color:var(--color-accent-orange); font-size:0.95em; margin-left:8px; font-weight:800;">${ROMAN_NUMERALS[tier]}</span>`
+            : '';
+
+        header.innerHTML = `
+            <div class="item-wrapper" style="display:inline-flex; align-items:center;">
+                ${getIconHtml(itemName)}
+                <span>${itemName}</span>
+                ${tierHtml}
+                <span style="margin-left: 10px; color: var(--color-text-dim); font-size: 0.9em;">(x${itemQty})</span>
+            </div>
+        `;
         mainLi.appendChild(header);
+
         if (isCraftable(itemName)) {
-            const recipeList = renderRecipeTree(itemName, itemQty, false, true); 
+            // 1. Базовое дерево
+            const recipeList = renderRecipeTree(itemName, itemQty, false, true);
             if (recipeList) mainLi.appendChild(recipeList);
+
+            // 2. Апгрейды
+            if (tier > 1 && WEAPON_UPGRADES[itemName]) {
+                const upgradeContainer = document.createElement('div');
+                upgradeContainer.style.paddingLeft = '20px';
+                upgradeContainer.style.borderLeft = '2px solid var(--color-neon-blue)';
+                upgradeContainer.style.marginTop = '5px';
+
+                // Заголовок секции апгрейдов (тут тоже убрал MK для консистентности)
+                const upgHeader = document.createElement('div');
+                upgHeader.innerHTML = `<em style="color:var(--color-neon-blue); font-size:0.9em;">+ Upgrades to ${ROMAN_NUMERALS[tier]}</em>`;
+                upgradeContainer.appendChild(upgHeader);
+
+                // Агрегация
+                let aggregatedUpgrades = {};
+                for (let t = 2; t <= tier; t++) {
+                    const upgRecipe = WEAPON_UPGRADES[itemName][t];
+                    if (upgRecipe) {
+                         for (const [uItem, uQty] of Object.entries(upgRecipe)) {
+                             aggregatedUpgrades[uItem] = (aggregatedUpgrades[uItem] || 0) + uQty;
+                         }
+                    }
+                }
+
+                const ul = document.createElement('ul');
+                ul.className = 'recipe-item-children';
+                ul.style.maxHeight = 'none';
+                const ulInner = document.createElement('div');
+                ulInner.className = 'recipe-item-children-inner';
+                const sortedAggregated = Object.entries(aggregatedUpgrades).sort((a, b) => a[0].localeCompare(b[0]));
+
+                for (const [uItem, uQty] of sortedAggregated) {
+                     const totalUQty = uQty * itemQty;
+                     const li = document.createElement('li');
+                     li.className = 'recipe-item';
+                     li.innerHTML = `
+                        <div class="craft-item-toggle base-resource" style="cursor:default; background:transparent; padding-left:0; border:none;">
+                            <div style="display: flex; align-items: center;">
+                                 <span style="color:var(--color-accent-orange); margin-right:5px;">•</span>
+                                 ${getIconHtml(uItem)}
+                                 <span>${uItem}</span>
+                            </div>
+                            <span class="res-qty">x${totalUQty}</span>
+                        </div>
+                     `;
+                     ulInner.appendChild(li);
+                }
+                ul.appendChild(ulInner);
+                upgradeContainer.appendChild(ul);
+                mainLi.appendChild(upgradeContainer);
+            }
+
         } else {
             mainLi.innerHTML += `<p style="margin-left: 10px;">&mdash; Base item, no recipe.</p>`;
         }
@@ -162,7 +302,7 @@ function renderRecipeTree(itemName, itemQty, isNested = true, isRoot = false) {
     ul.className = `recipe-item-children ${isNested && !isRoot ? 'collapsed' : ''}`;
     const ulInner = document.createElement('div');
     ulInner.className = 'recipe-item-children-inner';
-    
+
     const sortedIngredients = Object.entries(recipe).sort((a, b) => a[0].localeCompare(b[0]));
 
     for (const [ingredient, neededQty] of sortedIngredients) {
@@ -170,15 +310,14 @@ function renderRecipeTree(itemName, itemQty, isNested = true, isRoot = false) {
         const isInterm = isCraftable(ingredient);
         const li = document.createElement('li');
         li.className = 'recipe-item';
-        
+
         const toggleDiv = document.createElement('div');
         const isExpandedInitial = isRoot && isInterm;
-        toggleDiv.className = `craft-item-toggle ${isInterm ? 'craftable' : 'base-resource'} ${isExpandedInitial ? 'expanded' : ''}`; 
-        
+        toggleDiv.className = `craft-item-toggle ${isInterm ? 'craftable' : 'base-resource'} ${isExpandedInitial ? 'expanded' : ''}`;
+
         const nestedListId = `nested-${ingredient.replace(/\s/g, '-')}-${Math.random().toString(36).substring(2, 9)}`;
         if (isInterm) toggleDiv.setAttribute('data-target', nestedListId);
 
-        // ВСТАВКА ИКОНКИ В ДЕРЕВО
         toggleDiv.innerHTML = `
             <div style="display: flex; align-items: center;">
                 <span class="toggle-arrow">${isInterm ? (isExpandedInitial ? '▼' : '▶') : ''}</span>
@@ -190,7 +329,7 @@ function renderRecipeTree(itemName, itemQty, isNested = true, isRoot = false) {
         li.appendChild(toggleDiv);
 
         if (isInterm) {
-            const nestedUl = renderRecipeTree(ingredient, totalNeeded, true, false); 
+            const nestedUl = renderRecipeTree(ingredient, totalNeeded, true, false);
             if (nestedUl) {
                 nestedUl.id = nestedListId;
                 if (isNested) nestedUl.classList.add('collapsed');
@@ -200,71 +339,86 @@ function renderRecipeTree(itemName, itemQty, isNested = true, isRoot = false) {
         ulInner.appendChild(li);
     }
     ul.appendChild(ulInner);
-    
+
     if (isRoot) ul.classList.remove('collapsed');
     return ul;
 }
 
-// === ИЗМЕНЕННАЯ ФУНКЦИЯ ДЛЯ ПОИСКА ===
 function renderItemsUI(filter = '') {
     elements.itemsContainer.innerHTML = '';
     const filterLower = filter.toLowerCase();
     const categoriesArray = Object.entries(ALL_CRAFT_DATA);
-    
-    // Проверяем, есть ли текст в поиске
+
     const isSearching = filter.length > 0;
-    
+
     for (const [catName, itemsMap] of categoriesArray) {
         const filteredItems = Object.keys(itemsMap).filter(item => item.toLowerCase().includes(filterLower));
         if (filteredItems.length === 0) continue;
-        
+
         const catGroup = document.createElement('div');
         catGroup.className = 'category-group';
-        
+
         const titleH3 = document.createElement('h3');
-        // ЛОГИКА: Если ищем -> expanded, если нет -> collapsed
         const stateClass = isSearching ? 'expanded' : 'collapsed';
-        
-        titleH3.className = `category-title ${stateClass}`; 
-        const safeCatName = catName.replace(/\s/g, '-'); 
+
+        titleH3.className = `category-title ${stateClass}`;
+        const safeCatName = catName.replace(/\s/g, '-');
         titleH3.setAttribute('data-target', `content-${safeCatName}`);
-        
+
         const emoji = CATEGORY_EMOJIS[catName] || '💎';
-        // ЛОГИКА: Меняем стрелку
         const arrow = isSearching ? '▼' : '▶';
-        
+
         titleH3.innerHTML = `<span>${emoji} ${catName}</span><span class="toggle-icon">${arrow}</span>`;
         catGroup.appendChild(titleH3);
 
         const contentDiv = document.createElement('div');
         contentDiv.id = `content-${safeCatName}`;
-        // ЛОГИКА: Контент тоже раскрываем при поиске
-        contentDiv.className = `items-list-content ${stateClass}`; 
-        
-        const contentInnerDiv = document.createElement('div'); 
+        contentDiv.className = `items-list-content ${stateClass}`;
+
+        const contentInnerDiv = document.createElement('div');
         contentInnerDiv.className = 'items-list-content-inner';
 
         filteredItems.forEach(item => {
             const row = document.createElement('div');
             row.className = 'item-row';
-            const currentQty = userSelection[item] || 0;
-            
-            // ВСТАВКА ИКОНКИ В ГЛАВНЫЙ СПИСОК
+
+            // --- ЛОГИКА АКТИВНОГО УРОВНЯ В UI ---
+            const activeTier = uiActiveTiers[item] || 1;
+
+            // Получаем количество ИМЕННО ДЛЯ ЭТОГО УРОВНЯ
+            const currentQtyKey = getKey(item, activeTier);
+            const currentQty = userSelection[currentQtyKey] || 0;
+
+            const hasUpgrades = WEAPON_UPGRADES[item] !== undefined;
+
+            let tierHtml = '';
+            if (hasUpgrades) {
+                tierHtml = `<div class="tier-pips">`;
+                for (let i = 1; i <= 4; i++) {
+                    const activeClass = i <= activeTier ? 'active' : '';
+                    tierHtml += `<div class="tier-pip ${activeClass}" data-item="${item}" data-tier="${i}"></div>`;
+                }
+                tierHtml += `</div>`;
+            }
+
             row.innerHTML = `
                 <div class="item-wrapper">
                     ${getIconHtml(item)}
-                    <span class="item-name">${item}</span>
+                    <div class="item-info-col">
+                        <span class="item-name">${item}</span>
+                        ${tierHtml}
+                    </div>
                 </div>
                 <div class="quantity-control">
                     <button class="qty-btn minus" data-item="${item}" aria-label="Decrease">-</button>
-                    <input type="number" class="qty-input" value="${currentQty}" data-item="${item}" min="0" data-type="selection">
+                    <input type="number" class="qty-input" value="${currentQty}" data-item="${item}" data-active-tier="${activeTier}" min="0" data-type="selection">
                     <button class="qty-btn plus" data-item="${item}" aria-label="Increase">+</button>
                 </div>
             `;
-            contentInnerDiv.appendChild(row); 
+            contentInnerDiv.appendChild(row);
         });
-        
-        contentDiv.appendChild(contentInnerDiv); 
+
+        contentDiv.appendChild(contentInnerDiv);
         catGroup.appendChild(contentDiv);
         elements.itemsContainer.appendChild(catGroup);
     }
@@ -279,7 +433,6 @@ function renderInventoryUI(filter = '') {
         const currentQty = userInventory[resName] || 0;
         const row = document.createElement('div');
         row.className = 'inventory-input-container';
-        // ВСТАВКА ИКОНКИ В ИНВЕНТАРЬ
         row.innerHTML = `
             <div class="item-wrapper">
                 ${getIconHtml(resName)}
@@ -298,13 +451,15 @@ const handleInput = debounce((e) => {
     let newQty = parseInt(e.target.value) || 0;
     if (newQty < 0) newQty = 0;
     e.target.value = newQty;
-    
+
     if (type === 'selection') {
-        userSelection[item] = newQty;
+        const activeTier = parseInt(e.target.dataset.activeTier) || 1;
+        const key = getKey(item, activeTier);
+        userSelection[key] = newQty;
         calculateTotal();
     } else if (type === 'inventory') {
         userInventory[item] = newQty;
-        localStorage.setItem(STATE_KEYS.INVENTORY, JSON.stringify(userInventory)); 
+        localStorage.setItem(STATE_KEYS.INVENTORY, JSON.stringify(userInventory));
         calculateTotal();
     }
 }, 300);
@@ -312,20 +467,55 @@ const handleInput = debounce((e) => {
 function handleQuantityClick(e) {
     const btn = e.target.closest('.qty-btn');
     if (!btn) return;
-    
+
     const item = btn.dataset.item;
     const isPlus = btn.classList.contains('plus');
-    const input = btn.parentElement.querySelector('.qty-input'); 
+    const input = btn.parentElement.querySelector('.qty-input');
 
     if (input) {
+        // Берем активный уровень из атрибута input-а (он обновляется при рендере)
+        const activeTier = parseInt(input.dataset.activeTier) || 1;
+        const key = getKey(item, activeTier);
+
         let currentQty = parseInt(input.value) || 0;
         if (isPlus) currentQty++;
         else if (currentQty > 0) currentQty--;
 
         input.value = currentQty;
-        userSelection[item] = currentQty;
+        userSelection[key] = currentQty; // Сохраняем в уникальный ключ (напр. "Ferro|3")
+
         calculateTotal();
     }
+}
+
+function handleTierClick(e) {
+    const pip = e.target.closest('.tier-pip');
+    if (!pip) return;
+
+    const item = pip.dataset.item;
+    const targetTier = parseInt(pip.dataset.tier);
+
+    // 1. Обновляем состояние UI (какой таб активен)
+    uiActiveTiers[item] = targetTier;
+
+    // 2. Находим input и обновляем его значение "на лету" без полной перерисовки всего списка
+    const row = pip.closest('.item-row');
+    const input = row.querySelector('.qty-input');
+
+    // Получаем кол-во для НОВОГО выбранного уровня
+    const newKey = getKey(item, targetTier);
+    const newQty = userSelection[newKey] || 0;
+
+    input.value = newQty;
+    input.dataset.activeTier = targetTier; // Важно: обновляем атрибут для кнопок +/-
+
+    // 3. Обновляем визуально квадратики
+    const container = pip.parentElement;
+    container.querySelectorAll('.tier-pip').forEach(p => {
+         const pTier = parseInt(p.dataset.tier);
+         if (pTier <= targetTier) p.classList.add('active');
+         else p.classList.remove('active');
+    });
 }
 
 function handleTabClick(e) {
@@ -333,7 +523,7 @@ function handleTabClick(e) {
     const tabId = e.target.dataset.tab;
     e.target.classList.add('active');
     document.getElementById(tabId).classList.add('active');
-    
+
     elements.goalsControls.classList.toggle('active', tabId === 'craft-goals');
     document.getElementById('inventory-input').style.display = tabId === 'inventory-input' ? 'block' : 'none';
     document.getElementById('craft-goals').style.display = tabId === 'craft-goals' ? 'block' : 'none';
@@ -368,12 +558,12 @@ function toggleSection(header, content) {
 function attachTreeEventListeners() {
     document.querySelectorAll('#recipe-breakdown-list .craft-item-toggle.craftable').forEach(toggle => {
         toggle.onclick = (e) => {
-            e.stopPropagation(); 
-            const currentToggle = e.currentTarget; 
+            e.stopPropagation();
+            const currentToggle = e.currentTarget;
             const targetId = currentToggle.dataset.target;
             const content = document.getElementById(targetId);
             const icon = currentToggle.querySelector('.toggle-arrow');
-            
+
             if (content) {
                 const isCollapsed = content.classList.contains('collapsed');
                 if (isCollapsed) {
@@ -401,23 +591,27 @@ function attachAccordionEventListeners() {
 }
 
 function attachEventListeners() {
-    elements.itemsContainer.addEventListener('click', (e) => handleQuantityClick(e));
+    elements.itemsContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.qty-btn')) handleQuantityClick(e);
+        if (e.target.closest('.tier-pip')) handleTierClick(e);
+    });
+
     elements.itemsContainer.addEventListener('input', handleInput);
     elements.inventoryContainer.addEventListener('input', handleInput);
-    
+
     elements.resetButton.onclick = () => {
         userSelection = {};
+        uiActiveTiers = {}; // Сбрасываем UI табы
         localStorage.removeItem(STATE_KEYS.SELECTION);
         renderItemsUI(elements.searchInput.value);
         calculateTotal();
     };
 
-    // ЛОГИКА ДЛЯ НОВОЙ КНОПКИ СБРОСА ИНВЕНТАРЯ
     elements.resetInventoryButton.onclick = () => {
-        userInventory = {}; // Очищаем объект в памяти
-        localStorage.removeItem(STATE_KEYS.INVENTORY); // Удаляем из памяти браузера
-        renderInventoryUI(elements.searchInput.value); // Перерисовываем список (с учетом текущего фильтра поиска)
-        calculateTotal(); // Пересчитываем итоги
+        userInventory = {};
+        localStorage.removeItem(STATE_KEYS.INVENTORY);
+        renderInventoryUI(elements.searchInput.value);
+        calculateTotal();
     };
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -431,6 +625,8 @@ function attachEventListeners() {
     }, 200);
 
     elements.itemsContainer.addEventListener('click', (e) => {
+        if (e.target.closest('.qty-btn') || e.target.closest('.quantity-control') || e.target.closest('.tier-pip')) return;
+
         const title = e.target.closest('.category-title');
         if (title) {
             const targetId = title.dataset.target;
@@ -438,7 +634,7 @@ function attachEventListeners() {
             if (content) toggleSection(title, content);
         }
     });
-    
+
     elements.goalsControls.classList.add('active');
     document.getElementById('inventory-input').style.display = 'none';
     attachAccordionEventListeners();
