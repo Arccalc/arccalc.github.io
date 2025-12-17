@@ -254,7 +254,7 @@ h2.panel-title.total-header {
 }
 .item-row:hover { background: rgba(0, 229, 255, 0.05); }
 
-/* --- STYLES FOR ICONS --- */
+/* --- STYLES FOR ICONS & INFO --- */
 .item-wrapper {
     display: flex;
     align-items: center;
@@ -267,6 +267,35 @@ h2.panel-title.total-header {
     border-radius: 4px;
     background: rgba(0,0,0,0.3);
     border: 1px solid rgba(0, 229, 255, 0.1);
+}
+
+.item-info-col {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Стили для индикаторов уровня (Tier Pips) */
+.tier-pips {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
+}
+.tier-pip {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--color-text-dim);
+    background: rgba(0,0,0,0.5);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.tier-pip:hover {
+    border-color: var(--color-neon-blue);
+    box-shadow: 0 0 3px var(--color-neon-blue);
+}
+.tier-pip.active {
+    background: var(--color-neon-blue);
+    border-color: var(--color-neon-blue);
+    box-shadow: 0 0 5px var(--color-neon-blue);
 }
 
 .quantity-control {
