@@ -307,7 +307,7 @@ Weapons,Burletta,"Mechanical Components x3; Simple Gun Parts ×3",Gunsmith
 Weapons,Il Toro,"Mechanical Components x5; Simple Gun Parts ×6",Gunsmith
 Weapons,Torrente,"Advanced Mechanical Components ×2; Medium Gun Parts ×3; Steel Spring x6",Gunsmith
 Weapons,Osprey,"Advanced Mechanical Components ×2; Medium Gun Parts ×3; Wires ×7",Gunsmith
-Weapons,Venator,"Advanced Mechanical Components ×2; Medium Gun Parts ×3; Wires ×7",Gunsmith
+Weapons,Venator,"Advanced Mechanical Components ×2; Medium Gun Parts ×3; Magnet ×5",Gunsmith
 Weapons,Renegade,"Advanced Mechanical Components ×2; Medium Gun Parts ×3; Oil ×5",Gunsmith
 Weapons,Bettina,"Advanced Mechanical Components ×3; Heavy Gun Parts ×3; Canister ×3",Gunsmith
 Weapons,Tempest,"Advanced Mechanical Components ×2; Medium Gun Parts ×1",Gunsmith
@@ -444,3 +444,4 @@ Refiner,Power Rod,"Advanced Electrical Components ×2; ARC Circuitry ×2",Refine
         }
     }
 }
+
