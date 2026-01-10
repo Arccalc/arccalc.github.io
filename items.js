@@ -68,6 +68,7 @@ const IMAGE_MAP = {
     'Energy Clip': 'eclip.png',
 
     // Grenades / Explosives
+    'Tagging Grenade':'tagg.png',
     'Light Impact Grenade': 'limpg.png',
     'Shrapnel Grenade': 'shrapg.png',
     'Snap Blast Grenade': 'snapbg.png',
@@ -91,7 +92,7 @@ const IMAGE_MAP = {
     'Snap Hook': 'snaph.png',
     'Lure Grenade': 'lureg.png',
     'Lil Smoke Grenade': 'lsmokeg.png',
-    'Raider Hatchkey': 'rhkey.png',
+    'Raider Hatchkey': 'raiderh.png',
     'Zipline': 'zip.png',
     'Door Blocker': 'dblock.png',
     'Barricade Kit': 'bar_kit.png', // NEW
