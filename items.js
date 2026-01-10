@@ -21,7 +21,7 @@ const IMAGE_MAP = {
     'Hullcracker': 'hullcr.png',
     'Jupiter': 'jupiter.png',
     'Equalizer': 'equal.png',
-    'Aphelion': 'aphel.png', // NEW
+    'Aphelion': 'aphel.png',
 
     // Weapon Attachments
     'Angled Grip I': 'agrip1.png',
@@ -82,8 +82,8 @@ const IMAGE_MAP = {
     'Smoke Grenade': 'smokeg.png',
     'Tagging Grenade': 'tagg.png',
     'Light Stick': 'lstk.png',
-    'Deadline Mine': 'deadlm.png', // NEW
-    'Trailblazer': 'trail.png',     // NEW
+    'Deadline Mine': 'deadlm.png',
+    'Trailblazer': 'trail.png',
 
     // Utility
     'Binoculars': 'binoc.png',
@@ -94,6 +94,7 @@ const IMAGE_MAP = {
     'Raider Hatchkey': 'rhkey.png',
     'Zipline': 'zip.png',
     'Door Blocker': 'dblock.png',
+    'Barricade Kit': 'bar_kit.png', // NEW
 
     // Gear Sets
     'Combat Mark 1': 'cgear1.png',
@@ -387,6 +388,7 @@ Utility,Lil Smoke Grenade,"Chemicals ×5; Plastic Parts ×1",Utility Station
 Utility,Raider Hatchkey,"Advanced Electrical Components ×1; Sensors ×3",Utility Station
 Utility,Zipline,"Rope ×1; Mechanical Components ×1",Utility Station
 Utility,Door Blocker,"Metal Parts ×3; Rubber Parts ×3",Utility Station
+Utility,Barricade Kit,"Mechanical Components ×1",Utility Station
 Gear Sets,Combat Mark 1,"Plastic Parts ×6; Rubber Parts ×6",Gear Bench I
 Gear Sets,Looting Mark 1,"Plastic Parts ×6; Rubber Parts ×6",Gear Bench I
 Gear Sets,Tactical Mark 1,"Plastic Parts ×6; Rubber Parts ×6",Gear Bench I
