@@ -21,6 +21,7 @@ const IMAGE_MAP = {
     'Hullcracker': 'hullcr.png',
     'Jupiter': 'jupiter.png',
     'Equalizer': 'equal.png',
+    'Aphelion': 'aphel.png', // NEW
 
     // Weapon Attachments
     'Angled Grip I': 'agrip1.png',
@@ -81,11 +82,13 @@ const IMAGE_MAP = {
     'Smoke Grenade': 'smokeg.png',
     'Tagging Grenade': 'tagg.png',
     'Light Stick': 'lstk.png',
+    'Deadline Mine': 'deadlm.png', // NEW
+    'Trailblazer': 'trail.png',     // NEW
 
     // Utility
     'Binoculars': 'binoc.png',
     'Photoelectric Cloak': 'pcloak.png',
-    'Snap Hook': 'snaph.png'
+    'Snap Hook': 'snaph.png',
     'Lure Grenade': 'lureg.png',
     'Lil Smoke Grenade': 'lsmokeg.png',
     'Raider Hatchkey': 'rhkey.png',
@@ -317,6 +320,7 @@ Weapons,Vulcano,"Magnetic Accelerator ×1; Heavy Gun Parts x3; Exodus Modules x1
 Weapons,Hullcracker,"Magnetic Accelerator ×1; Heavy Gun Parts x3; Exodus Modules x1",Gunsmith
 Weapons,Jupiter,"Magnetic Accelerator ×3; Complex Gun Parts ×3; Queen Reactor ×1",Gunsmith
 Weapons,Equalizer,"Magnetic Accelerator ×3; Complex Gun Parts ×3; Queen Reactor ×1",Gunsmith
+Weapons,Aphelion,"Magnetic Accelerator ×3; Complex Gun Parts ×3; Matriarch Reactor ×1",Gunsmith
 Weapon Attachments,Angled Grip I,"Plastic Parts ×6; Duct Tape ×1",Gunsmith
 Weapon Attachments,Angled Grip II,"Mechanical Components x2; Duct Tape x3",Gunsmith
 Weapon Attachments,Angled Grip III,"Mod Components x1; Duct Tape x2",Gunsmith
@@ -372,6 +376,8 @@ Grenades / Explosives,Wolfpack,"Explosive Compound x3; ARC Motion Core x2",Explo
 Grenades / Explosives,Smoke Grenade,"Chemicals x7; Canister x1",Explosives Station
 Grenades / Explosives,Tagging Grenade,"Electrical Components x1; Sensors x1",Explosives Station
 Grenades / Explosives,Light Stick,"Chemicals x3",Explosives Station
+Grenades / Explosives,Deadline Mine,"Explosive Compound ×3; ARC Circuitry ×2",Explosives Station
+Grenades / Explosives,Trailblazer,"Synthesized Fuel ×1; Explosive Compound ×1",Explosives Station
 Utility,Binoculars,"Plastic Parts ×8; Rubber Parts ×4",Utility Station
 Utility,Photoelectric Cloak,"Advanced Electrical Components ×2; Speaker Component ×4",Utility Station
 Utility,Snap Hook,"Power Rod ×2; Rope ×3; Exodus Modules x1",Utility Station
@@ -446,5 +452,3 @@ Refiner,Power Rod,"Advanced Electrical Components ×2; ARC Circuitry ×2",Refine
         }
     }
 }
-
-
