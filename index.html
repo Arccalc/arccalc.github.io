@@ -41,7 +41,13 @@
     </div>
 
     <div class="panel" id="output-panel">
-        <h2 class="panel-title total-header">Total Base Resources Needed</h2>
+        <div class="panel-header-wrapper" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-neon-blue); margin-bottom: 15px; padding-bottom: 8px;">
+            <h2 class="panel-title total-header" style="border: none; margin: 0; padding: 0;">Total Base Resources Needed</h2>
+            <button id="export-btn" class="icon-btn" title="Export to CSV">
+                📥 CSV
+            </button>
+        </div>
+
         <div class="panel-content">
             <ul id="base-total-list"> 
                 <div class="empty-state">Select items to calculate...</div>
