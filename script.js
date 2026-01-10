@@ -7,7 +7,11 @@ const STATE_KEYS = {
 let userSelection = JSON.parse(localStorage.getItem(STATE_KEYS.SELECTION) || '{}');
 let userInventory = JSON.parse(localStorage.getItem(STATE_KEYS.INVENTORY) || '{}');
 
-// Временное состояние для UI (какой квадрат сейчас подсвечен у пользователя)
+// Глобальные переменные для экспорта
+let currentGrandTotal = {};       // Базовые ресурсы
+let currentIntermediateTotal = {}; // Крафт-компоненты (Intermediate)
+
+// Временное состояние для UI
 let uiActiveTiers = {};
 
 const ROMAN_NUMERALS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
@@ -20,12 +24,10 @@ function getRecipe(itemName) {
 }
 function isCraftable(itemName) { return CRAFTABLE_ITEMS.has(itemName); }
 
-// Хелпер для создания ключа
 function getKey(item, tier) {
     return tier > 1 ? `${item}|${tier}` : item;
 }
 
-// Хелпер для разбора ключа
 function parseKey(key) {
     const parts = key.split('|');
     return {
@@ -113,11 +115,68 @@ function calculateTotal() {
             }
         }
     }
+    
+    // Сохраняем данные в глобальные переменные для экспорта
+    currentGrandTotal = grandTotal;
+    
     const intermediateTotals = getIntermediateTotals();
+    currentIntermediateTotal = intermediateTotals; // Сохраняем промежуточные
+
     renderBaseTotal(grandTotal);
     renderIntermediateTotals(intermediateTotals);
     renderRecipeBreakdown();
     localStorage.setItem(STATE_KEYS.SELECTION, JSON.stringify(userSelection));
+}
+
+// --- CSV EXPORT LOGIC (UPDATED) ---
+function exportToCSV() {
+    const hasBase = Object.keys(currentGrandTotal).length > 0;
+    const hasIntermediate = Object.keys(currentIntermediateTotal).length > 0;
+
+    if (!hasBase && !hasIntermediate) {
+        alert("Resource list is empty. Add items first!");
+        return;
+    }
+
+    // Заголовки (только 2 столбца)
+    let csvContent = "Resource Name,Total Needed\n";
+
+    // 1. БАЗОВЫЕ РЕСУРСЫ
+    if (hasBase) {
+        csvContent += "--- BASE RESOURCES ---\n";
+        const sortedBase = Object.entries(currentGrandTotal).sort((a, b) => a[0].localeCompare(b[0]));
+        sortedBase.forEach(([resName, qty]) => {
+            const safeName = resName.includes(',') ? `"${resName}"` : resName;
+            csvContent += `${safeName},${qty}\n`;
+        });
+    }
+
+    // 2. КРАФТ ИНГРЕДИЕНТЫ (Промежуточные)
+    // Фильтруем те, у которых qty > 0 (на всякий случай)
+    const validIntermediate = Object.entries(currentIntermediateTotal).filter(([_, qty]) => qty > 0);
+    
+    if (validIntermediate.length > 0) {
+        // Добавляем отступ для читаемости
+        csvContent += "\n--- CRAFTING INGREDIENTS ---\n";
+        
+        const sortedInter = validIntermediate.sort((a, b) => a[0].localeCompare(b[0]));
+        sortedInter.forEach(([itemName, qty]) => {
+            const safeName = itemName.includes(',') ? `"${itemName}"` : itemName;
+            csvContent += `${safeName},${qty}\n`;
+        });
+    }
+
+    // Создаем файл и скачиваем
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "arc_raiders_list.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // --- UI RENDERING ---
@@ -132,6 +191,7 @@ function getDOMElements() {
         searchInput: document.getElementById('search-input'),
         resetButton: document.getElementById('reset-button'),
         resetInventoryButton: document.getElementById('reset-inventory-btn'),
+        exportButton: document.getElementById('export-btn'),
         goalsControls: document.getElementById('goals-controls'),
         craftTotalContent: document.getElementById('craft-total-content'),
         recipeBreakdownContent: document.getElementById('recipe-breakdown-content')
@@ -195,7 +255,6 @@ function renderRecipeBreakdown() {
         return;
     }
 
-    // Сортируем: Сначала по имени, потом по уровню
     selectedKeys.sort((a, b) => {
         const keyA = parseKey(a[0]);
         const keyB = parseKey(b[0]);
@@ -211,10 +270,6 @@ function renderRecipeBreakdown() {
         const mainLi = document.createElement('li');
         const header = document.createElement('h4');
 
-        // --- ИСПРАВЛЕННЫЙ ЗАГОЛОВОК ---
-        // 1. Убрали "MK".
-        // 2. Сделали римскую цифру жирной и чуть больше для видимости.
-        // 3. Добавили явные отступы (margin) для цифры и для количества (xN).
         const tierHtml = tier > 1
             ? `<span style="color:var(--color-accent-orange); font-size:0.95em; margin-left:8px; font-weight:800;">${ROMAN_NUMERALS[tier]}</span>`
             : '';
@@ -230,23 +285,19 @@ function renderRecipeBreakdown() {
         mainLi.appendChild(header);
 
         if (isCraftable(itemName)) {
-            // 1. Базовое дерево
             const recipeList = renderRecipeTree(itemName, itemQty, false, true);
             if (recipeList) mainLi.appendChild(recipeList);
 
-            // 2. Апгрейды
             if (tier > 1 && WEAPON_UPGRADES[itemName]) {
                 const upgradeContainer = document.createElement('div');
                 upgradeContainer.style.paddingLeft = '20px';
                 upgradeContainer.style.borderLeft = '2px solid var(--color-neon-blue)';
                 upgradeContainer.style.marginTop = '5px';
 
-                // Заголовок секции апгрейдов (тут тоже убрал MK для консистентности)
                 const upgHeader = document.createElement('div');
                 upgHeader.innerHTML = `<em style="color:var(--color-neon-blue); font-size:0.9em;">+ Upgrades to ${ROMAN_NUMERALS[tier]}</em>`;
                 upgradeContainer.appendChild(upgHeader);
 
-                // Агрегация
                 let aggregatedUpgrades = {};
                 for (let t = 2; t <= tier; t++) {
                     const upgRecipe = WEAPON_UPGRADES[itemName][t];
@@ -382,10 +433,7 @@ function renderItemsUI(filter = '') {
             const row = document.createElement('div');
             row.className = 'item-row';
 
-            // --- ЛОГИКА АКТИВНОГО УРОВНЯ В UI ---
             const activeTier = uiActiveTiers[item] || 1;
-
-            // Получаем количество ИМЕННО ДЛЯ ЭТОГО УРОВНЯ
             const currentQtyKey = getKey(item, activeTier);
             const currentQty = userSelection[currentQtyKey] || 0;
 
@@ -473,7 +521,6 @@ function handleQuantityClick(e) {
     const input = btn.parentElement.querySelector('.qty-input');
 
     if (input) {
-        // Берем активный уровень из атрибута input-а (он обновляется при рендере)
         const activeTier = parseInt(input.dataset.activeTier) || 1;
         const key = getKey(item, activeTier);
 
@@ -482,7 +529,7 @@ function handleQuantityClick(e) {
         else if (currentQty > 0) currentQty--;
 
         input.value = currentQty;
-        userSelection[key] = currentQty; // Сохраняем в уникальный ключ (напр. "Ferro|3")
+        userSelection[key] = currentQty;
 
         calculateTotal();
     }
@@ -495,21 +542,17 @@ function handleTierClick(e) {
     const item = pip.dataset.item;
     const targetTier = parseInt(pip.dataset.tier);
 
-    // 1. Обновляем состояние UI (какой таб активен)
     uiActiveTiers[item] = targetTier;
 
-    // 2. Находим input и обновляем его значение "на лету" без полной перерисовки всего списка
     const row = pip.closest('.item-row');
     const input = row.querySelector('.qty-input');
 
-    // Получаем кол-во для НОВОГО выбранного уровня
     const newKey = getKey(item, targetTier);
     const newQty = userSelection[newKey] || 0;
 
     input.value = newQty;
-    input.dataset.activeTier = targetTier; // Важно: обновляем атрибут для кнопок +/-
+    input.dataset.activeTier = targetTier;
 
-    // 3. Обновляем визуально квадратики
     const container = pip.parentElement;
     container.querySelectorAll('.tier-pip').forEach(p => {
          const pTier = parseInt(p.dataset.tier);
@@ -601,7 +644,7 @@ function attachEventListeners() {
 
     elements.resetButton.onclick = () => {
         userSelection = {};
-        uiActiveTiers = {}; // Сбрасываем UI табы
+        uiActiveTiers = {};
         localStorage.removeItem(STATE_KEYS.SELECTION);
         renderItemsUI(elements.searchInput.value);
         calculateTotal();
@@ -613,6 +656,10 @@ function attachEventListeners() {
         renderInventoryUI(elements.searchInput.value);
         calculateTotal();
     };
+
+    if (elements.exportButton) {
+        elements.exportButton.onclick = exportToCSV;
+    }
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.onclick = handleTabClick;
