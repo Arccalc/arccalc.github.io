@@ -85,6 +85,7 @@ const IMAGE_MAP = {
     // Utility
     'Binoculars': 'binoc.png',
     'Photoelectric Cloak': 'pcloak.png',
+    'Snap Hook': 'snaph.png'
     'Lure Grenade': 'lureg.png',
     'Lil Smoke Grenade': 'lsmokeg.png',
     'Raider Hatchkey': 'rhkey.png',
@@ -373,6 +374,7 @@ Grenades / Explosives,Tagging Grenade,"Electrical Components x1; Sensors x1",Exp
 Grenades / Explosives,Light Stick,"Chemicals x3",Explosives Station
 Utility,Binoculars,"Plastic Parts ×8; Rubber Parts ×4",Utility Station
 Utility,Photoelectric Cloak,"Advanced Electrical Components ×2; Speaker Component ×4",Utility Station
+Utility,Snap Hook,"Power Rod ×2; Rope ×3; Exodus Modules x1",Utility Station
 Utility,Lure Grenade,"Speaker Component ×1; Electrical Components ×1",Utility Station
 Utility,Lil Smoke Grenade,"Chemicals ×5; Plastic Parts ×1",Utility Station
 Utility,Raider Hatchkey,"Advanced Electrical Components ×1; Sensors ×3",Utility Station
@@ -444,4 +446,5 @@ Refiner,Power Rod,"Advanced Electrical Components ×2; ARC Circuitry ×2",Refine
         }
     }
 }
+
 
