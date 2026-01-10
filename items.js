@@ -163,6 +163,7 @@ const IMAGE_MAP = {
     'Oil': 'oil.png',
     'Processor': 'processor.png',
     'Queen Reactor': 'queen_part.png',
+    'Matriarch Reactor': 'mat_part.png',
     'Rope': 'rope.png',
     'Sensors': 'sensors.png',
     'Simple Gun Parts': 'simple_gun_parts.png',
