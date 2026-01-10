@@ -374,7 +374,7 @@ Grenades / Explosives,Jolt Mine,"Electrical Components ×1; Battery ×1",Explosi
 Grenades / Explosives,Trigger Node,"Crude Explosives ×2; Processor ×1",Explosives Station
 Grenades / Explosives,Blaze Grenade,"Explosive Compound ×1; Oil ×2",Explosives Station
 Grenades / Explosives,Showstopper,"Advanced Electrical Components x1; Voltage Converter x1",Explosives Station
-Grenades / Explosives,Seeker Grenade,"Crude Explosives x1; Chemicals x3",Explosives Station
+Grenades / Explosives,Seeker Grenade,"Crude Explosives x1; ARC Alloy x2",Explosives Station
 Grenades / Explosives,Wolfpack,"Explosive Compound x3; ARC Motion Core x2",Explosives Station
 Grenades / Explosives,Smoke Grenade,"Chemicals x7; Canister x1",Explosives Station
 Grenades / Explosives,Tagging Grenade,"Electrical Components x1; Sensors x1",Explosives Station
@@ -456,3 +456,4 @@ Refiner,Power Rod,"Advanced Electrical Components ×2; ARC Circuitry ×2",Refine
         }
     }
 }
+
