@@ -331,7 +331,7 @@ Weapon Attachments,Vertical Grip I,"Plastic Parts ×6; Duct Tape ×1",Gunsmith
 Weapon Attachments,Vertical Grip II,"Mechanical Components x1; Duct Tape x1",Gunsmith
 Weapon Attachments,Vertical Grip III,"Mod Components x2; Duct Tape x5",Gunsmith
 Weapon Attachments,Compensator I,"Metal Parts ×6; Wires ×1",Gunsmith
-Weapon Attachments,Compensator II,"Mechanical Components x2; Wires x1",Gunsmith
+Weapon Attachments,Compensator II,"Mechanical Components x2; Wires x4",Gunsmith
 Weapon Attachments,Compensator III,"Mechanical Components x2; Wires x8",Gunsmith
 Weapon Attachments,Muzzle Brake I,"Metal Parts ×6; Wires ×1",Gunsmith
 Weapon Attachments,Muzzle Brake II,"Mechanical Components x2; Wires x4",Gunsmith
@@ -456,4 +456,5 @@ Refiner,Power Rod,"Advanced Electrical Components ×2; ARC Circuitry ×2",Refine
         }
     }
 }
+
 
