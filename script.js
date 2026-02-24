@@ -1,705 +1,1159 @@
-const STATE_KEYS = {
-    SELECTION: 'arcRaidersSelection',
-    INVENTORY: 'arcRaidersInventory'
+/**
+ * ARC Raiders // Advanced Resource Calculator
+ * FINAL VERSION: Standalone Tier Pricing, Inventory Steps, UI Sync, SCRAPPER & REVERSE LOOKUP
+ */
+
+const STATE_KEYS = { 
+    SEL: 'arcRaidersSelection', 
+    INV: 'arcRaidersInventory', 
+    LDT: 'arcRaidersLoadout', 
+    SLDT: 'arcRaidersSavedLoadouts' 
 };
 
-// Структура userSelection: { "Ferro": 1, "Ferro|3": 2, "Ferro|4": 1 }
-let userSelection = JSON.parse(localStorage.getItem(STATE_KEYS.SELECTION) || '{}');
-let userInventory = JSON.parse(localStorage.getItem(STATE_KEYS.INVENTORY) || '{}');
+const ROMANS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
 
-// Глобальные переменные для экспорта
-let currentGrandTotal = {};       // Базовые ресурсы
-let currentIntermediateTotal = {}; // Крафт-компоненты (Intermediate)
+const GEAR_STATS = {
+    'Combat Mark 1': { bp: 16, safe: 1, quick: 4, util: 1 }, 'Combat Mark 2': { bp: 18, safe: 1, quick: 4, util: 1 },
+    'Combat Mark 3 (Aggressive)': { bp: 18, safe: 1, quick: 4, util: 2 }, 'Combat Mark 3 (Flanking)': { bp: 20, safe: 2, quick: 5, util: 0 },
+    'Looting Mark 1': { bp: 18, safe: 1, quick: 4, util: 0 }, 'Looting Mark 2': { bp: 22, safe: 2, quick: 4, util: 0 },
+    'Looting Mark 3 (Cautious)': { bp: 24, safe: 2, quick: 5, util: 0 }, 'Looting Mark 3 (Survivor)': { bp: 20, safe: 3, quick: 5, util: 1 },
+    'Tactical Mark 1': { bp: 15, safe: 1, quick: 5, util: 0 }, 'Tactical Mark 2': { bp: 17, safe: 1, quick: 5, util: 1 },
+    'Tactical Mark 3 (Healing)': { bp: 16, safe: 3, quick: 4, util: 0 }, 'Tactical Mark 3 (Defensive)': { bp: 20, safe: 1, quick: 5, util: 0 }
+};
 
-// Временное состояние для UI
-let uiActiveTiers = {};
+// --- UTILS ---
+const el = (tag, cl = '', html = '', atk = {}) => {
+    const n = document.createElement(tag); 
+    if (cl) n.className = cl; 
+    if (html) n.innerHTML = html;
+    Object.entries(atk).forEach(([k, v]) => n.setAttribute(k, v)); 
+    return n;
+};
 
-const ROMAN_NUMERALS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
+// Добавлено: Базовая функция валидации (Fix QA 1.4)
+const safeInt = (val) => {
+    const n = parseInt(val);
+    return isNaN(n) ? 0 : Math.max(0, n);
+};
 
-function getRecipe(itemName) {
-    for (const category in ALL_CRAFT_DATA) {
-        if (ALL_CRAFT_DATA[category][itemName]) return ALL_CRAFT_DATA[category][itemName];
+const storage = {
+    get: (k, d = {}) => { try { return JSON.parse(localStorage.getItem(k)) || d } catch { return d } },
+    set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
+};
+
+const dom = {}; 
+
+const getStackSize = (n) => (typeof STACK_SIZES !== 'undefined' && STACK_SIZES[n]) ? STACK_SIZES[n] : 1;
+const getYield = (n) => (typeof CRAFT_YIELDS !== 'undefined' && CRAFT_YIELDS[n]) ? CRAFT_YIELDS[n] : 1;
+
+const getPrice = (n, t = 1) => {
+    if (typeof ITEM_PRICES === 'undefined') return 0;
+    const tieredKey = `${n}|${t}`;
+    return (ITEM_PRICES[tieredKey] !== undefined) ? ITEM_PRICES[tieredKey] : (ITEM_PRICES[n] || 0);
+};
+
+const getRecipe = (n) => {
+    for (const cat in ALL_CRAFT_DATA) {
+        if (ALL_CRAFT_DATA[cat][n]) return ALL_CRAFT_DATA[cat][n];
     }
     return null;
-}
-function isCraftable(itemName) { return CRAFTABLE_ITEMS.has(itemName); }
+};
 
-function getKey(item, tier) {
-    return tier > 1 ? `${item}|${tier}` : item;
-}
+const isCraftable = (n) => CRAFTABLE_ITEMS?.has(n);
+const getKey = (n, t) => t > 1 ? `${n}|${t}` : n;
+const parseKey = (k) => { 
+    const p = k.split('|'); 
+    return { name: p[0], tier: p[1] ? parseInt(p[1]) : 1 }; 
+};
 
-function parseKey(key) {
-    const parts = key.split('|');
-    return {
-        name: parts[0],
-        tier: parts.length > 1 ? parseInt(parts[1]) : 1
-    };
-}
-
-function getBaseResources(itemName, quantity, totalNeeded = {}) {
-    if (BASE_RESOURCES.has(itemName)) {
-        totalNeeded[itemName] = (totalNeeded[itemName] || 0) + quantity;
-        return totalNeeded;
-    }
-    const recipe = getRecipe(itemName);
-    if (!recipe) return totalNeeded;
-    for (const [ingredient, neededQty] of Object.entries(recipe)) {
-        getBaseResources(ingredient, neededQty * quantity, totalNeeded);
-    }
-    return totalNeeded;
-}
-
-function getIntermediateRecursive(itemName, quantity, totalNeeded = {}) {
-    const recipe = getRecipe(itemName);
-    if (!recipe) return totalNeeded;
-    for (const [ingredient, neededQty] of Object.entries(recipe)) {
-        if (isCraftable(ingredient)) {
-            const qty = neededQty * quantity;
-            totalNeeded[ingredient] = (totalNeeded[ingredient] || 0) + qty;
-            getIntermediateRecursive(ingredient, qty, totalNeeded);
+// --- REACTIVE STATE ---
+const createReactive = (key, initial) => new Proxy(initial, {
+    set(target, prop, val) {
+        target[prop] = val; 
+        storage.set(key, target);
+        if (key === STATE_KEYS.LDT && editingName) {
+            savedLoadouts[editingName] = JSON.parse(JSON.stringify(target));
+            savedLoadouts[editingName]._mult = dom.loadoutMultiplier?.value || 1;
+            storage.set(STATE_KEYS.SLDT, savedLoadouts);
         }
+        calculateTotal(); 
+        return true;
+    },
+    deleteProperty(target, prop) {
+        delete target[prop]; 
+        storage.set(key, target);
+        if (key === STATE_KEYS.LDT && editingName) {
+            savedLoadouts[editingName] = JSON.parse(JSON.stringify(target));
+            savedLoadouts[editingName]._mult = dom.loadoutMultiplier?.value || 1;
+            storage.set(STATE_KEYS.SLDT, savedLoadouts);
+        }
+        calculateTotal(); 
+        return true;
     }
-    return totalNeeded;
-}
+});
 
-function getIntermediateTotals() {
-    let intermediateTotals = {};
-    for (const [key, qty] of Object.entries(userSelection)) {
-         if (qty > 0) {
-             const { name, tier } = parseKey(key);
+let userSelection = createReactive(STATE_KEYS.SEL, storage.get(STATE_KEYS.SEL));
+let userInventory = createReactive(STATE_KEYS.INV, storage.get(STATE_KEYS.INV));
+let currentLoadout = createReactive(STATE_KEYS.LDT, storage.get(STATE_KEYS.LDT));
+let savedLoadouts = storage.get(STATE_KEYS.SLDT);
 
-             if (isCraftable(name)) {
-                 // 1. Базовые компоненты
-                 getIntermediateRecursive(name, qty, intermediateTotals);
+let editingName = null, activeSlotId = null, openCats = new Set();
+let uiTiers = {}; 
+let invTiers = {}; 
+let scrapSelection = {}; // Состояние для ручного распылителя
+let openTreeNodes = new Set(); // Для Fix QA 1.2
 
-                 // 2. Апгрейды
-                 if (tier > 1 && WEAPON_UPGRADES[name]) {
-                     for (let t = 2; t <= tier; t++) {
-                         const upgradeRecipe = WEAPON_UPGRADES[name][t];
-                         if (upgradeRecipe) {
-                             for (const [upgItem, upgQty] of Object.entries(upgradeRecipe)) {
-                                 if (isCraftable(upgItem)) {
-                                     const uQty = upgQty * qty;
-                                     intermediateTotals[upgItem] = (intermediateTotals[upgItem] || 0) + uQty;
-                                     getIntermediateRecursive(upgItem, uQty, intermediateTotals);
-                                 }
-                             }
-                         }
-                     }
-                 }
-             }
-         }
-    }
-    return intermediateTotals;
-}
+let lastGoalsNeed = {}, lastLdtNeed = {}, lastHave = {};
+let requiredBaseResources = new Set();
 
+// --- CALCULATION ---
 function calculateTotal() {
-    let grandTotal = {};
-    for (const [key, qty] of Object.entries(userSelection)) {
-        if (qty > 0) {
-            const { name, tier } = parseKey(key);
+    const goalsNeed = {}, ldtNeed = {};
+    const mult = parseInt(dom.loadoutMultiplier?.value) || 1;
+    let netWorth = 0; 
 
-            // 1. Считаем базу (Всегда нужна)
-            getBaseResources(name, qty, grandTotal);
-
-            // 2. Считаем апгрейды (если уровень > 1)
-            if (tier > 1 && WEAPON_UPGRADES[name]) {
-                for (let t = 2; t <= tier; t++) {
-                    const upgradeRecipe = WEAPON_UPGRADES[name][t];
-                    if (upgradeRecipe) {
-                        for (const [upgItem, upgQty] of Object.entries(upgradeRecipe)) {
-                            getBaseResources(upgItem, upgQty * qty, grandTotal);
-                        }
-                    }
-                }
-            }
+    const breakdown = (item, qty, targetObj) => {
+        targetObj[item] = (targetObj[item] || 0) + qty;
+        const r = getRecipe(item);
+        if (r) {
+            const yieldVal = getYield(item);
+            const cycles = Math.ceil(qty / yieldVal);
+            
+            Object.entries(r).forEach(([ing, iq]) => {
+                breakdown(ing, iq * cycles, targetObj);
+            });
         }
-    }
-    
-    // Сохраняем данные в глобальные переменные для экспорта
-    currentGrandTotal = grandTotal;
-    
-    const intermediateTotals = getIntermediateTotals();
-    currentIntermediateTotal = intermediateTotals; // Сохраняем промежуточные
-
-    renderBaseTotal(grandTotal);
-    renderIntermediateTotals(intermediateTotals);
-    renderRecipeBreakdown();
-    localStorage.setItem(STATE_KEYS.SELECTION, JSON.stringify(userSelection));
-}
-
-// --- CSV EXPORT LOGIC (UPDATED) ---
-function exportToCSV() {
-    const hasBase = Object.keys(currentGrandTotal).length > 0;
-    const hasIntermediate = Object.keys(currentIntermediateTotal).length > 0;
-
-    if (!hasBase && !hasIntermediate) {
-        alert("Resource list is empty. Add items first!");
-        return;
-    }
-
-    // Заголовки (только 2 столбца)
-    let csvContent = "Resource Name,Total Needed\n";
-
-    // 1. БАЗОВЫЕ РЕСУРСЫ
-    if (hasBase) {
-        csvContent += "--- BASE RESOURCES ---\n";
-        const sortedBase = Object.entries(currentGrandTotal).sort((a, b) => a[0].localeCompare(b[0]));
-        sortedBase.forEach(([resName, qty]) => {
-            const safeName = resName.includes(',') ? `"${resName}"` : resName;
-            csvContent += `${safeName},${qty}\n`;
-        });
-    }
-
-    // 2. КРАФТ ИНГРЕДИЕНТЫ (Промежуточные)
-    // Фильтруем те, у которых qty > 0 (на всякий случай)
-    const validIntermediate = Object.entries(currentIntermediateTotal).filter(([_, qty]) => qty > 0);
-    
-    if (validIntermediate.length > 0) {
-        // Добавляем отступ для читаемости
-        csvContent += "\n--- CRAFTING INGREDIENTS ---\n";
-        
-        const sortedInter = validIntermediate.sort((a, b) => a[0].localeCompare(b[0]));
-        sortedInter.forEach(([itemName, qty]) => {
-            const safeName = itemName.includes(',') ? `"${itemName}"` : itemName;
-            csvContent += `${safeName},${qty}\n`;
-        });
-    }
-
-    // Создаем файл и скачиваем
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", "arc_raiders_list.csv");
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// --- UI RENDERING ---
-let elements = {};
-function getDOMElements() {
-    elements = {
-        baseTotalList: document.getElementById('base-total-list'),
-        craftTotalList: document.getElementById('craft-total-list'),
-        recipeBreakdownList: document.getElementById('recipe-breakdown-list'),
-        itemsContainer: document.getElementById('items-container'),
-        inventoryContainer: document.getElementById('inventory-container'),
-        searchInput: document.getElementById('search-input'),
-        resetButton: document.getElementById('reset-button'),
-        resetInventoryButton: document.getElementById('reset-inventory-btn'),
-        exportButton: document.getElementById('export-btn'),
-        goalsControls: document.getElementById('goals-controls'),
-        craftTotalContent: document.getElementById('craft-total-content'),
-        recipeBreakdownContent: document.getElementById('recipe-breakdown-content')
     };
-}
 
-function renderBaseTotal(grandTotal) {
-    elements.baseTotalList.innerHTML = '';
-    if (Object.keys(grandTotal).length === 0) {
-        elements.baseTotalList.innerHTML = '<div class="empty-state">Select items to calculate...</div>';
-        return;
-    }
-    const sortedResources = Object.entries(grandTotal).sort((a, b) => a[0].localeCompare(b[0]));
-    for (const [resName, requiredQty] of sortedResources) {
-        const inventoryQty = userInventory[resName] || 0;
-        const neededQty = Math.max(0, requiredQty - inventoryQty);
-        const statusClass = neededQty > 0 ? 'missing-resource' : 'enough-resource';
-        const li = document.createElement('li');
-
-        li.innerHTML = `
-            <div class="item-wrapper">
-                ${getIconHtml(resName)}
-                <span class="res-name">${resName}</span>
-            </div>
-            <span style="text-align: right;">
-                <span class="${statusClass}">x${requiredQty}</span>
-                <span class="base-total-label">Needed: ${requiredQty} (Have: ${inventoryQty})</span>
-            </span>
-        `;
-        elements.baseTotalList.appendChild(li);
-    }
-}
-
-function renderIntermediateTotals(intermediateTotals) {
-    const innerList = elements.craftTotalContent.querySelector('.accordion-content-inner ul');
-    innerList.innerHTML = '';
-    const intermediateItems = Object.entries(intermediateTotals).filter(([item, qty]) => qty > 0).sort((a, b) => a[0].localeCompare(b[0]));
-    if (intermediateItems.length === 0) {
-           innerList.innerHTML = '<div class="empty-state">No intermediate materials needed.</div>';
-           return;
-    }
-    for (const [itemName, totalQty] of intermediateItems) {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <div class="item-wrapper">
-                ${getIconHtml(itemName)}
-                <span style="color: var(--color-text); font-weight: bold;">${itemName}</span>
-            </div>
-            <span class="res-qty" style="color: var(--color-orange);">x${totalQty}</span>`;
-        innerList.appendChild(li);
-    }
-}
-
-function renderRecipeBreakdown() {
-    const innerList = elements.recipeBreakdownContent.querySelector('.accordion-content-inner ul');
-    innerList.innerHTML = '';
-    const selectedKeys = Object.entries(userSelection).filter(([key, qty]) => qty > 0);
-
-    if (selectedKeys.length === 0) {
-        innerList.innerHTML = '<div class="empty-state">Details will appear after selection...</div>';
-        return;
-    }
-
-    selectedKeys.sort((a, b) => {
-        const keyA = parseKey(a[0]);
-        const keyB = parseKey(b[0]);
-        if (keyA.name !== keyB.name) return keyA.name.localeCompare(keyB.name);
-        return keyA.tier - keyB.tier;
-    });
-
-    const outerUl = document.createElement('ul');
-
-    selectedKeys.forEach(([key, itemQty]) => {
-        const { name: itemName, tier } = parseKey(key);
-
-        const mainLi = document.createElement('li');
-        const header = document.createElement('h4');
-
-        const tierHtml = tier > 1
-            ? `<span style="color:var(--color-accent-orange); font-size:0.95em; margin-left:8px; font-weight:800;">${ROMAN_NUMERALS[tier]}</span>`
-            : '';
-
-        header.innerHTML = `
-            <div class="item-wrapper" style="display:inline-flex; align-items:center;">
-                ${getIconHtml(itemName)}
-                <span>${itemName}</span>
-                ${tierHtml}
-                <span style="margin-left: 10px; color: var(--color-text-dim); font-size: 0.9em;">(x${itemQty})</span>
-            </div>
-        `;
-        mainLi.appendChild(header);
-
-        if (isCraftable(itemName)) {
-            const recipeList = renderRecipeTree(itemName, itemQty, false, true);
-            if (recipeList) mainLi.appendChild(recipeList);
-
-            if (tier > 1 && WEAPON_UPGRADES[itemName]) {
-                const upgradeContainer = document.createElement('div');
-                upgradeContainer.style.paddingLeft = '20px';
-                upgradeContainer.style.borderLeft = '2px solid var(--color-neon-blue)';
-                upgradeContainer.style.marginTop = '5px';
-
-                const upgHeader = document.createElement('div');
-                upgHeader.innerHTML = `<em style="color:var(--color-neon-blue); font-size:0.9em;">+ Upgrades to ${ROMAN_NUMERALS[tier]}</em>`;
-                upgradeContainer.appendChild(upgHeader);
-
-                let aggregatedUpgrades = {};
+    const processSource = (src, targetNeed) => {
+        Object.entries(src).forEach(([k, q]) => {
+            if (q <= 0) return; 
+            const { name, tier } = parseKey(k); 
+            breakdown(name, q, targetNeed);
+            
+            if (tier > 1 && WEAPON_UPGRADES?.[name]) {
                 for (let t = 2; t <= tier; t++) {
-                    const upgRecipe = WEAPON_UPGRADES[itemName][t];
-                    if (upgRecipe) {
-                         for (const [uItem, uQty] of Object.entries(upgRecipe)) {
-                             aggregatedUpgrades[uItem] = (aggregatedUpgrades[uItem] || 0) + uQty;
-                         }
+                    const upg = WEAPON_UPGRADES[name][t];
+                    if (upg) {
+                        Object.entries(upg).forEach(([uI, uQ]) => breakdown(uI, uQ * q, targetNeed));
                     }
                 }
-
-                const ul = document.createElement('ul');
-                ul.className = 'recipe-item-children';
-                ul.style.maxHeight = 'none';
-                const ulInner = document.createElement('div');
-                ulInner.className = 'recipe-item-children-inner';
-                const sortedAggregated = Object.entries(aggregatedUpgrades).sort((a, b) => a[0].localeCompare(b[0]));
-
-                for (const [uItem, uQty] of sortedAggregated) {
-                     const totalUQty = uQty * itemQty;
-                     const li = document.createElement('li');
-                     li.className = 'recipe-item';
-                     li.innerHTML = `
-                        <div class="craft-item-toggle base-resource" style="cursor:default; background:transparent; padding-left:0; border:none;">
-                            <div style="display: flex; align-items: center;">
-                                 <span style="color:var(--color-accent-orange); margin-right:5px;">•</span>
-                                 ${getIconHtml(uItem)}
-                                 <span>${uItem}</span>
-                            </div>
-                            <span class="res-qty">x${totalUQty}</span>
-                        </div>
-                     `;
-                     ulInner.appendChild(li);
-                }
-                ul.appendChild(ulInner);
-                upgradeContainer.appendChild(ul);
-                mainLi.appendChild(upgradeContainer);
             }
+        });
+    };
 
-        } else {
-            mainLi.innerHTML += `<p style="margin-left: 10px;">&mdash; Base item, no recipe.</p>`;
-        }
-        outerUl.appendChild(mainLi);
+    const selFlat = { ...userSelection };
+    processSource(selFlat, goalsNeed);
+
+    const ldtFlat = {};
+    Object.values(currentLoadout).forEach(d => { 
+        if (d?.name) { 
+            const q = (d.qty || 1) * mult; 
+            const k = getKey(d.name, d.tier); 
+            ldtFlat[k] = (ldtFlat[k] || 0) + q; 
+        } 
     });
-    innerList.appendChild(outerUl);
-    attachTreeEventListeners();
+    processSource(ldtFlat, ldtNeed);
+
+    const totalHave = {};
+    Object.entries(userInventory).forEach(([k, q]) => {
+        if (q > 0) {
+            const { name, tier } = parseKey(k);
+            
+            // ФИКС Ресайклера: Мы больше не используем breakdown() для инвентаря.
+            // Теперь система видит только сырые ресурсы, что заставляет Ресайклер 
+            // корректно предлагать распыление готовых предметов.
+            totalHave[name] = (totalHave[name] || 0) + q;
+            
+            const y = getYield(name);
+            const p = getPrice(name, tier); 
+            netWorth += (q / y) * p;
+        }
+    });
+
+    lastGoalsNeed = goalsNeed;
+    lastLdtNeed = ldtNeed;
+    lastHave = totalHave;
+
+    requiredBaseResources.clear();
+    Object.keys(goalsNeed).forEach(k => requiredBaseResources.add(k));
+    Object.keys(ldtNeed).forEach(k => requiredBaseResources.add(k));
+
+    if (dom.totalNetWorth) {
+        dom.totalNetWorth.innerText = `${Math.floor(netWorth).toLocaleString()} ©`;
+        dom.totalNetWorth.classList.remove('update-pulse');
+        void dom.totalNetWorth.offsetWidth; 
+        dom.totalNetWorth.classList.add('update-pulse');
+    }
+
+    renderOutput(goalsNeed, ldtNeed, totalHave);
+    renderIngredients(selFlat, ldtFlat, totalHave);
+    renderRecipeBreakdown(selFlat, ldtFlat);
+    
+    // Обновляем данные скраппера при любых изменениях инвентаря или целей
+    if (typeof renderSmartSuggestions === 'function') renderSmartSuggestions();
+    if (typeof renderScrapperUI === 'function') renderScrapperUI();
 }
 
-function renderRecipeTree(itemName, itemQty, isNested = true, isRoot = false) {
-    const recipe = getRecipe(itemName);
-    if (!recipe) return null;
+function renderOutput(goalsNeed, ldtNeed, have) {
+    const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    if (!dom.baseTotalList) return; 
+    dom.baseTotalList.innerHTML = '';
+    
+    const draw = (data, title) => {
+        const baseData = Object.entries(data).filter(([n]) => BASE_RESOURCES.has(n)).sort();
+        if (!baseData.length) return;
+        
+        dom.baseTotalList.appendChild(el('div', 'output-divider', title));
+        baseData.forEach(([n, q]) => {
+            const h = have[n] || 0;
+            const need = Math.max(0, q - h);
+            
+            // Строка с классом clickable-resource для вызова Reverse Lookup
+            const li = el('li', 'clickable-resource', `
+                <div class="item-wrapper">${getIconHtml(n)} ${n}</div>
+                <span style="text-align:right">
+                    <span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
+                    <span class="base-total-label">Need: ${need} (Have: ${h})</span>
+                </span>`, { title: "Click to find scrap sources" });
+            
+            li.onclick = () => appendReverseScrap(n);
+            dom.baseTotalList.appendChild(li);
+        });
+    };
+    
+    if (tab === 'craft-goals') draw(goalsNeed, "RESOURCES FOR GOALS");
+    else if (tab === 'loadouts') draw(ldtNeed, "RESOURCES FOR LOADOUT");
+    else { 
+        draw(goalsNeed, "CRAFTING GOALS TOTAL"); 
+        draw(ldtNeed, "LOADOUT TOTAL"); 
+    }
+}
+function renderIngredients(sel, ldt, have) {
+    const list = document.getElementById('craft-total-list'); if (!list) return; list.innerHTML = '';
+    const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    
+    const getInter = (source) => {
+        let inter = {};
+        const collect = (n, q, t = 1) => {
+            const r = getRecipe(n);
+            if (r) {
+                const yieldVal = getYield(n);
+                const cycles = Math.ceil(q / yieldVal);
+                Object.entries(r).forEach(([ing, iq]) => {
+                    if (isCraftable(ing)) { 
+                        const total = iq * cycles; 
+                        inter[ing] = (inter[ing] || 0) + total; 
+                        collect(ing, total, 1); 
+                    }
+                });
+            }
+            if (t > 1 && WEAPON_UPGRADES?.[n]) {
+                for (let i = 2; i <= t; i++) {
+                    const upg = WEAPON_UPGRADES[n][i];
+                    if (upg) Object.entries(upg).forEach(([uIng, uIq]) => {
+                        if (isCraftable(uIng)) {
+                            const total = uIq * q;
+                            inter[uIng] = (inter[uIng] || 0) + total;
+                            collect(uIng, total, 1);
+                        }
+                    });
+                }
+            }
+        };
+        Object.entries(source).forEach(([k, q]) => {
+            const { name, tier } = parseKey(k);
+            collect(name, q, tier);
+        });
+        return inter;
+    };
+    
+    const drawInter = (data, title) => {
+        if (!Object.keys(data).length) return;
+        list.appendChild(el('div', 'output-divider', title));
+        Object.entries(data).sort().forEach(([n, q]) => {
+            const h = have[n] || 0;
+            const need = Math.max(0, q - h);
+            list.appendChild(el('li', '', `<div class="item-wrapper">${getIconHtml(n)} <b>${n}</b></div>
+                <span style="text-align:right"><span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
+                <span class="base-total-label">Need: ${q} (Have: ${h})</span></span>`));
+        });
+    };
+    
+    if (tab !== 'loadouts') drawInter(getInter(sel), "INGREDIENTS FOR GOALS");
+    if (tab !== 'craft-goals') drawInter(getInter(ldt), "INGREDIENTS FOR LOADOUT");
+}
 
-    const ul = document.createElement('ul');
-    ul.className = `recipe-item-children ${isNested && !isRoot ? 'collapsed' : ''}`;
-    const ulInner = document.createElement('div');
-    ulInner.className = 'recipe-item-children-inner';
+function renderInventoryUI(f = '') {
+    if (!dom.inventoryContainer) return;
+    dom.inventoryContainer.innerHTML = '';
+    const hideEmpty = document.getElementById('filter-hide-empty')?.classList.contains('active');
+    const showReq = document.getElementById('filter-show-required')?.classList.contains('active');
+    const groupedResources = {};
+    
+    const hasSearch = f.trim().length > 0;
+    const searchTerm = f.toLowerCase();
 
-    const sortedIngredients = Object.entries(recipe).sort((a, b) => a[0].localeCompare(b[0]));
+    Object.keys(ALL_ITEMS_FLAT).forEach(res => {
+        const cat = ALL_ITEMS_FLAT[res].category || 'Misc';
+        // ФИКС ПОИСКА ПО КАТЕГОРИИ: теперь ищем и в имени предмета, и в имени категории
+        if (res.toLowerCase().includes(searchTerm) || cat.toLowerCase().includes(searchTerm)) {
+            if (showReq && !requiredBaseResources.has(res)) return;
+            
+            if (hideEmpty) {
+                let hasAny = false;
+                for (let t=1; t<=4; t++) { if ((userInventory[getKey(res, t)] || 0) > 0) hasAny = true; }
+                if (!hasAny) return;
+            }
 
-    for (const [ingredient, neededQty] of sortedIngredients) {
-        const totalNeeded = neededQty * itemQty;
-        const isInterm = isCraftable(ingredient);
-        const li = document.createElement('li');
-        li.className = 'recipe-item';
+            if (!groupedResources[cat]) groupedResources[cat] = []; 
+            groupedResources[cat].push(res);
+        }
+    });
 
-        const toggleDiv = document.createElement('div');
-        const isExpandedInitial = isRoot && isInterm;
-        toggleDiv.className = `craft-item-toggle ${isInterm ? 'craftable' : 'base-resource'} ${isExpandedInitial ? 'expanded' : ''}`;
+    Object.keys(groupedResources).sort().forEach(cat => {
+        const catId = `inv-cat-${cat.replace(/\s/g, '-')}`;
+        const isOpen = hasSearch || openCats.has(catId);
+        
+        const group = el('div', 'category-group');
+        group.innerHTML = `<h3 class="category-title ${isOpen?'':'collapsed'}" data-action="toggle-cat" data-target="${catId}">
+            <span>${CATEGORY_EMOJIS[cat]||'📦'} ${cat}</span><span class="toggle-icon">${isOpen?'▼':'▶'}</span></h3>`;
+        const inner = el('div', 'items-list-content-inner');
 
-        const nestedListId = `nested-${ingredient.replace(/\s/g, '-')}-${Math.random().toString(36).substring(2, 9)}`;
-        if (isInterm) toggleDiv.setAttribute('data-target', nestedListId);
+        groupedResources[cat].sort().forEach(res => {
+            const tier = invTiers[res] || 1;
+            const itemKey = getKey(res, tier);
+            const stackSize = getStackSize(res), currentTotal = userInventory[itemKey] || 0;
+            const stacks = Math.floor(currentTotal / stackSize), remainder = currentTotal % stackSize;
+            
+            const price = getPrice(res, tier);
+            const yieldVal = getYield(res);
+            const rowValue = Math.floor((currentTotal / yieldVal) * price);
 
-        toggleDiv.innerHTML = `
-            <div style="display: flex; align-items: center;">
-                <span class="toggle-arrow">${isInterm ? (isExpandedInitial ? '▼' : '▶') : ''}</span>
-                ${getIconHtml(ingredient)}
-                <span class="item-name-display">${ingredient}</span>
-            </div>
-            <span class="res-qty">x${totalNeeded}</span>
-        `;
-        li.appendChild(toggleDiv);
+            const row = el('div', 'inventory-input-container');
+            
+            let pipsHtml = '';
+            if (WEAPON_UPGRADES?.[res]) {
+                pipsHtml = `<div class="tier-pips" style="margin-top:4px;">${[1,2,3,4].map(t => 
+                    `<div class="tier-pip ${t===tier?'active':''}" onclick="event.stopPropagation(); invTiers['${res}']=${t}; renderInventoryUI('${f}')"></div>`
+                ).join('')}</div>`;
+            }
 
-        if (isInterm) {
-            const nestedUl = renderRecipeTree(ingredient, totalNeeded, true, false);
-            if (nestedUl) {
-                nestedUl.id = nestedListId;
-                if (isNested) nestedUl.classList.add('collapsed');
-                li.appendChild(nestedUl);
+            const itemInfo = el('div', 'item-wrapper', `
+                ${getIconHtml(res)} 
+                <div class="inv-item-info">
+                    <span>${res} ${tier > 1 ? ROMANS[tier] : ''}</span>
+                    <small class="inv-price-tag">${price > 0 ? price + ' ©' : ''}</small>
+                    ${pipsHtml}
+                </div>
+            `);
+
+            const calcWrapper = el('div', 'inventory-calc-wrapper');
+            
+            const createGroup = (icon, val, onUpdate, step = 1) => {
+                const g = el('div', 'inv-stack-group'), i = el('span', 'inv-icon', icon);
+                const d = el('button', 'inv-stepper', '−', {tabindex: '-1'});
+                const inc = el('button', 'inv-stepper', '+', {tabindex: '-1'});
+                const input = el('input', 'inv-stack-input', '', {type: 'number', placeholder: '0', min: '0', value: val > 0 ? val : ''});
+                
+                input.onchange = (e) => {
+                    e.target.value = safeInt(e.target.value); 
+                    onUpdate();
+                };
+
+                d.onclick = () => { input.value = Math.max(0, safeInt(input.value) - step); input.dispatchEvent(new Event('change')); };
+                inc.onclick = () => { input.value = safeInt(input.value) + step; input.dispatchEvent(new Event('change')); };
+                g.append(i, d, input, inc); return {g, input};
+            };
+
+            const totalDisp = el('div', `inv-total-display ${currentTotal > 0 ? 'has-items' : ''}`, `
+                <span class="row-total-qty">= ${currentTotal}</span>
+                <small class="row-value-disp">${rowValue > 0 ? rowValue.toLocaleString() + ' ©' : ''}</small>
+            `);
+
+            const update = () => {
+                const sVal = parseInt(sGroup.input.value) || 0, rVal = parseInt(rGroup.input.value) || 0;
+                const newTotal = Math.max(0, (sVal * stackSize) + rVal);
+                userInventory[itemKey] = newTotal;
+                
+                const newRowValue = Math.floor((newTotal / yieldVal) * price);
+                const qtySpan = totalDisp.querySelector('.row-total-qty');
+                const valSpan = totalDisp.querySelector('.row-value-disp');
+                
+                if (qtySpan) qtySpan.innerText = `= ${newTotal}`;
+                if (valSpan) valSpan.innerText = newRowValue > 0 ? `${newRowValue.toLocaleString()} ©` : '';
+                totalDisp.className = `inv-total-display ${newTotal > 0 ? 'has-items' : ''}`;
+            };
+
+            const sGroup = createGroup('📦', stacks, update, 1);
+            const rGroup = createGroup('🧩', remainder, update, yieldVal);
+            
+            calcWrapper.append(sGroup.g, rGroup.g, totalDisp);
+            row.append(itemInfo, calcWrapper);
+            inner.appendChild(row);
+        });
+
+        const content = el('div', `items-list-content ${isOpen?'':'collapsed'}`, '', {id: catId});
+        content.appendChild(inner); group.append(content); dom.inventoryContainer.appendChild(group);
+    });
+}
+
+function renderRecipeBreakdown(sel, ldt) {
+    const list = document.getElementById('recipe-breakdown-list'); if (!list) return; list.innerHTML = '';
+    const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    const renderSection = (source, label) => {
+        Object.entries(source).sort().forEach(([k, q]) => {
+            if (q <= 0) return; const item = parseKey(k);
+            const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">${label}</span>`;
+            const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier>1?ROMANS[item.tier]:''} ${badge} (x${q})</div></h4>`);
+            if (isCraftable(item.name)) { 
+                const tree = renderTree(item.name, q, false, true, item.tier); if (tree) li.appendChild(tree); 
+            }
+            list.appendChild(li);
+        });
+    };
+    if (tab !== 'loadouts') renderSection(sel, 'GOAL');
+    if (tab !== 'craft-goals') renderSection(ldt, 'LOADOUT');
+}
+
+function exportToCSV() {
+    const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
+    const combinedData = (tab === 'craft-goals') ? lastGoalsNeed : (tab === 'loadouts' ? lastLdtNeed : { ...lastGoalsNeed, ...lastLdtNeed });
+    
+    let csv = "Resource Name,Total Needed\n";
+    csv += "--- BASE RESOURCES ---\n";
+    Object.entries(combinedData).filter(([n]) => !isCraftable(n)).sort().forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
+
+    csv += "\n--- CRAFTING INGREDIENTS ---\n";
+    Object.entries(combinedData).filter(([n]) => isCraftable(n)).sort().forEach(([n, q]) => {
+        const isTarget = userSelection[n] || Object.values(currentLoadout).some(d => d?.name === n);
+        if (!isTarget || q > (userSelection[n] || 0)) { csv += `"${n}",${q}\n`; }
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
+    a.download = `arc_raiders_resources_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click();
+    window.URL.revokeObjectURL(url); document.body.removeChild(a);
+}
+
+function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
+    const r = getRecipe(name);
+    if (!r && !(tier > 1 && WEAPON_UPGRADES?.[name])) return null;
+
+    const ul = el('ul', `recipe-item-children ${isNested && !isRoot ? 'collapsed' : ''}`);
+    const inner = el('div', 'recipe-item-children-inner');
+    const yieldVal = getYield(name);
+    const cycles = Math.ceil(qty / yieldVal);
+
+    const addItemToTree = (ing, iq, tLabel = '') => {
+        const total = iq * (isRoot ? cycles : qty);
+        const isC = isCraftable(ing), li = el('li', 'recipe-item');
+        const tid = `node-${Math.random().toString(36).substr(2, 7)}`;
+        const badge = tLabel ? `<span style="font-size:0.6rem; color:var(--color-highlight-yellow); border:1px solid; padding:0 3px; margin-right:5px; vertical-align:middle;">${tLabel}</span>` : '';
+        const batchInfo = (yieldVal > 1 && isRoot) ? ` <small style="color:var(--color-text-dim); font-size:0.7rem;">(Batch: x${yieldVal})</small>` : '';
+
+        const toggle = el('div', `craft-item-toggle ${isC?'craftable':'base-resource'}`, 
+            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC?'▶':''}</span>${getIconHtml(ing)} <span class="item-name-display">${badge}${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
+            isC ? {'data-target': tid} : {});
+            
+        li.appendChild(toggle);
+        if (isC) { 
+            const sub = renderTree(ing, total, true, false, 1); 
+            if (sub) { sub.id = tid; li.appendChild(sub); } 
+        }
+        inner.appendChild(li);
+    };
+
+    if (r) Object.entries(r).sort().forEach(([ing, iq]) => addItemToTree(ing, iq));
+    if (tier > 1 && WEAPON_UPGRADES?.[name]) {
+        for (let t = 2; t <= tier; t++) {
+            const upg = WEAPON_UPGRADES[name][t];
+            if (upg) Object.entries(upg).sort().forEach(([ing, iq]) => addItemToTree(ing, iq, `T${t}`));
+        }
+    }
+    ul.appendChild(inner); return ul;
+}
+
+// ==========================================
+// --- NEW SCRAPPER / RECYCLER LOGIC ---
+// ==========================================
+
+const getScrapDbKey = (name, tier) => {
+    if (tier === 1) return name;
+    const suffixes = { 2: ' ii', 3: ' iii', 4: ' iV' };
+    const key = name + (suffixes[tier] || '');
+    return RECYCLE_DB[key] ? key : name; 
+};
+
+const getBaseName = (name) => name.replace(/ (ii|iii|iV)$/i, '');
+
+function renderSmartSuggestions() {
+    const container = document.getElementById('smart-suggestions-list');
+    if (!container || typeof RECYCLE_DB === 'undefined') return;
+
+    const missing = {};
+    const combinedNeed = { ...lastGoalsNeed, ...lastLdtNeed };
+    Object.entries(combinedNeed).forEach(([res, needQty]) => {
+        const have = lastHave[res] || 0;
+        if (needQty > have) missing[res] = needQty - have;
+    });
+
+    if (Object.keys(missing).length === 0) {
+        container.innerHTML = `<div class="empty-state-small" style="color: var(--color-enough);">No missing resources! You're good to go.</div>`;
+        return;
+    }
+
+    let suggestionsHTML = '';
+    Object.entries(userInventory).forEach(([invKey, invQty]) => {
+        if (invQty <= 0) return;
+        const { name, tier } = parseKey(invKey);
+        const dbKey = getScrapDbKey(name, tier);
+        const scrapData = RECYCLE_DB[dbKey];
+        
+        if (scrapData) {
+            let helpsWith = [];
+            Object.entries(scrapData).forEach(([yieldItem, yieldQty]) => {
+                if (missing[yieldItem]) {
+                    const totalYield = yieldQty * invQty;
+                    helpsWith.push(`${yieldItem} (x${totalYield})`);
+                }
+            });
+
+            if (helpsWith.length > 0) {
+                const displayName = tier > 1 ? `${name} ${ROMANS[tier]}` : name;
+                suggestionsHTML += `
+                    <div class="suggestion-card">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            ${getIconHtml(getBaseName(name))}
+                            <div>
+                                <span style="color: var(--color-text); font-size: 0.9rem;">${displayName} (Have: ${invQty})</span><br>
+                                <span style="font-size: 0.75rem; color: var(--color-text-dim);">Yields: <span style="color: var(--color-neon-blue);">${helpsWith.join(', ')}</span></span>
+                            </div>
+                        </div>
+                    </div>
+                `;
             }
         }
-        ulInner.appendChild(li);
-    }
-    ul.appendChild(ulInner);
+    });
 
-    if (isRoot) ul.classList.remove('collapsed');
-    return ul;
+    container.innerHTML = suggestionsHTML || `<div class="empty-state-small" style="color: var(--color-text-dim);">No scrappable items in inventory match your missing resources.</div>`;
 }
 
-function renderItemsUI(filter = '') {
-    elements.itemsContainer.innerHTML = '';
-    const filterLower = filter.toLowerCase();
-    const categoriesArray = Object.entries(ALL_CRAFT_DATA);
+function renderScrapperUI() {
+    const list = document.getElementById('scrapper-inventory-list');
+    if (!list || typeof RECYCLE_DB === 'undefined') return;
 
-    const isSearching = filter.length > 0;
+    list.innerHTML = '';
+    let hasItems = false;
 
-    for (const [catName, itemsMap] of categoriesArray) {
-        const filteredItems = Object.keys(itemsMap).filter(item => item.toLowerCase().includes(filterLower));
-        if (filteredItems.length === 0) continue;
-
-        const catGroup = document.createElement('div');
-        catGroup.className = 'category-group';
-
-        const titleH3 = document.createElement('h3');
-        const stateClass = isSearching ? 'expanded' : 'collapsed';
-
-        titleH3.className = `category-title ${stateClass}`;
-        const safeCatName = catName.replace(/\s/g, '-');
-        titleH3.setAttribute('data-target', `content-${safeCatName}`);
-
-        const emoji = CATEGORY_EMOJIS[catName] || '💎';
-        const arrow = isSearching ? '▼' : '▶';
-
-        titleH3.innerHTML = `<span>${emoji} ${catName}</span><span class="toggle-icon">${arrow}</span>`;
-        catGroup.appendChild(titleH3);
-
-        const contentDiv = document.createElement('div');
-        contentDiv.id = `content-${safeCatName}`;
-        contentDiv.className = `items-list-content ${stateClass}`;
-
-        const contentInnerDiv = document.createElement('div');
-        contentInnerDiv.className = 'items-list-content-inner';
-
-        filteredItems.forEach(item => {
-            const row = document.createElement('div');
-            row.className = 'item-row';
-
-            const activeTier = uiActiveTiers[item] || 1;
-            const currentQtyKey = getKey(item, activeTier);
-            const currentQty = userSelection[currentQtyKey] || 0;
-
-            const hasUpgrades = WEAPON_UPGRADES[item] !== undefined;
-
-            let tierHtml = '';
-            if (hasUpgrades) {
-                tierHtml = `<div class="tier-pips">`;
-                for (let i = 1; i <= 4; i++) {
-                    const activeClass = i <= activeTier ? 'active' : '';
-                    tierHtml += `<div class="tier-pip ${activeClass}" data-item="${item}" data-tier="${i}"></div>`;
-                }
-                tierHtml += `</div>`;
-            }
-
+    Object.entries(userInventory).sort().forEach(([invKey, invQty]) => {
+        if (invQty <= 0) return;
+        const { name, tier } = parseKey(invKey);
+        const dbKey = getScrapDbKey(name, tier);
+        
+        if (RECYCLE_DB[dbKey]) {
+            hasItems = true;
+            const currentScrapQty = scrapSelection[invKey] || 0;
+            const row = el('div', `scrapper-item-row ${currentScrapQty > 0 ? 'selected' : ''}`);
+            
             row.innerHTML = `
-                <div class="item-wrapper">
-                    ${getIconHtml(item)}
-                    <div class="item-info-col">
-                        <span class="item-name">${item}</span>
-                        ${tierHtml}
-                    </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    ${getIconHtml(getBaseName(name))}
+                    <span style="font-size: 0.85rem;">${name} ${tier > 1 ? ROMANS[tier] : ''} <span style="color:var(--color-text-dim);">(Max: ${invQty})</span></span>
                 </div>
-                <div class="quantity-control">
-                    <button class="qty-btn minus" data-item="${item}" aria-label="Decrease">-</button>
-                    <input type="number" class="qty-input" value="${currentQty}" data-item="${item}" data-active-tier="${activeTier}" min="0" data-type="selection">
-                    <button class="qty-btn plus" data-item="${item}" aria-label="Increase">+</button>
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <input type="number" class="scrap-qty-input" min="0" max="${invQty}" value="${currentScrapQty}" data-scraptarget="${invKey}">
                 </div>
             `;
-            contentInnerDiv.appendChild(row);
-        });
+            
+            const input = row.querySelector('.scrap-qty-input');
+            input.addEventListener('input', (e) => {
+                let val = parseInt(e.target.value) || 0;
+                if (val < 0) val = 0;
+                if (val > invQty) val = invQty;
+                e.target.value = val;
+                
+                if (val > 0) scrapSelection[invKey] = val;
+                else delete scrapSelection[invKey];
+                
+                row.classList.toggle('selected', val > 0);
+                renderScrapperYield();
+            });
 
-        contentDiv.appendChild(contentInnerDiv);
-        catGroup.appendChild(contentDiv);
-        elements.itemsContainer.appendChild(catGroup);
-    }
-}
-
-function renderInventoryUI(filter = '') {
-    elements.inventoryContainer.innerHTML = '';
-    const sortedBaseResources = Array.from(BASE_RESOURCES).sort();
-    const filterLower = filter.toLowerCase();
-
-    sortedBaseResources.filter(res => res.toLowerCase().includes(filterLower)).forEach(resName => {
-        const currentQty = userInventory[resName] || 0;
-        const row = document.createElement('div');
-        row.className = 'inventory-input-container';
-        row.innerHTML = `
-            <div class="item-wrapper">
-                ${getIconHtml(resName)}
-                <span class="item-name">${resName}</span>
-            </div>
-            <input type="number" class="inventory-input" value="${currentQty}" data-item="${resName}" min="0" data-type="inventory">
-        `;
-        elements.inventoryContainer.appendChild(row);
-    });
-}
-
-// --- EVENT HANDLERS ---
-const handleInput = debounce((e) => {
-    const item = e.target.dataset.item;
-    const type = e.target.dataset.type;
-    let newQty = parseInt(e.target.value) || 0;
-    if (newQty < 0) newQty = 0;
-    e.target.value = newQty;
-
-    if (type === 'selection') {
-        const activeTier = parseInt(e.target.dataset.activeTier) || 1;
-        const key = getKey(item, activeTier);
-        userSelection[key] = newQty;
-        calculateTotal();
-    } else if (type === 'inventory') {
-        userInventory[item] = newQty;
-        localStorage.setItem(STATE_KEYS.INVENTORY, JSON.stringify(userInventory));
-        calculateTotal();
-    }
-}, 300);
-
-function handleQuantityClick(e) {
-    const btn = e.target.closest('.qty-btn');
-    if (!btn) return;
-
-    const item = btn.dataset.item;
-    const isPlus = btn.classList.contains('plus');
-    const input = btn.parentElement.querySelector('.qty-input');
-
-    if (input) {
-        const activeTier = parseInt(input.dataset.activeTier) || 1;
-        const key = getKey(item, activeTier);
-
-        let currentQty = parseInt(input.value) || 0;
-        if (isPlus) currentQty++;
-        else if (currentQty > 0) currentQty--;
-
-        input.value = currentQty;
-        userSelection[key] = currentQty;
-
-        calculateTotal();
-    }
-}
-
-function handleTierClick(e) {
-    const pip = e.target.closest('.tier-pip');
-    if (!pip) return;
-
-    const item = pip.dataset.item;
-    const targetTier = parseInt(pip.dataset.tier);
-
-    uiActiveTiers[item] = targetTier;
-
-    const row = pip.closest('.item-row');
-    const input = row.querySelector('.qty-input');
-
-    const newKey = getKey(item, targetTier);
-    const newQty = userSelection[newKey] || 0;
-
-    input.value = newQty;
-    input.dataset.activeTier = targetTier;
-
-    const container = pip.parentElement;
-    container.querySelectorAll('.tier-pip').forEach(p => {
-         const pTier = parseInt(p.dataset.tier);
-         if (pTier <= targetTier) p.classList.add('active');
-         else p.classList.remove('active');
-    });
-}
-
-function handleTabClick(e) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    const tabId = e.target.dataset.tab;
-    e.target.classList.add('active');
-    document.getElementById(tabId).classList.add('active');
-
-    elements.goalsControls.classList.toggle('active', tabId === 'craft-goals');
-    document.getElementById('inventory-input').style.display = tabId === 'inventory-input' ? 'block' : 'none';
-    document.getElementById('craft-goals').style.display = tabId === 'craft-goals' ? 'block' : 'none';
-
-    const currentFilter = elements.searchInput.value;
-    if (tabId === 'inventory-input') {
-          renderInventoryUI(currentFilter);
-          elements.searchInput.oninput = debounce(() => renderInventoryUI(elements.searchInput.value), 200);
-    } else if (tabId === 'craft-goals') {
-          renderItemsUI(currentFilter);
-          elements.searchInput.oninput = debounce(() => renderItemsUI(elements.searchInput.value), 200);
-    }
-}
-
-function toggleSection(header, content) {
-    const isCollapsed = content.classList.contains('collapsed');
-    if (isCollapsed) {
-        content.classList.remove('collapsed');
-        header.classList.remove('collapsed');
-        if (header.classList.contains('accordion-title')) header.classList.add('expanded');
-        const icon = header.querySelector('.toggle-icon');
-        if (icon) icon.textContent = '▼';
-    } else {
-        content.classList.add('collapsed');
-        header.classList.add('collapsed');
-        if (header.classList.contains('accordion-title')) header.classList.remove('expanded');
-        const icon = header.querySelector('.toggle-icon');
-        if (icon) icon.textContent = '▶';
-    }
-}
-
-function attachTreeEventListeners() {
-    document.querySelectorAll('#recipe-breakdown-list .craft-item-toggle.craftable').forEach(toggle => {
-        toggle.onclick = (e) => {
-            e.stopPropagation();
-            const currentToggle = e.currentTarget;
-            const targetId = currentToggle.dataset.target;
-            const content = document.getElementById(targetId);
-            const icon = currentToggle.querySelector('.toggle-arrow');
-
-            if (content) {
-                const isCollapsed = content.classList.contains('collapsed');
-                if (isCollapsed) {
-                    content.classList.remove('collapsed');
-                    currentToggle.classList.add('expanded');
-                    if (icon) icon.textContent = '▼';
-                } else {
-                    content.classList.add('collapsed');
-                    currentToggle.classList.remove('expanded');
-                    if (icon) icon.textContent = '▶';
-                }
-            }
-        };
-    });
-}
-
-function attachAccordionEventListeners() {
-    document.querySelectorAll('.accordion-title').forEach(title => {
-        title.onclick = (e) => {
-            const targetId = title.dataset.target;
-            const content = document.getElementById(targetId);
-            if (content) toggleSection(title, content);
-        };
-    });
-}
-
-function attachEventListeners() {
-    elements.itemsContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.qty-btn')) handleQuantityClick(e);
-        if (e.target.closest('.tier-pip')) handleTierClick(e);
-    });
-
-    elements.itemsContainer.addEventListener('input', handleInput);
-    elements.inventoryContainer.addEventListener('input', handleInput);
-
-    elements.resetButton.onclick = () => {
-        userSelection = {};
-        uiActiveTiers = {};
-        localStorage.removeItem(STATE_KEYS.SELECTION);
-        renderItemsUI(elements.searchInput.value);
-        calculateTotal();
-    };
-
-    elements.resetInventoryButton.onclick = () => {
-        userInventory = {};
-        localStorage.removeItem(STATE_KEYS.INVENTORY);
-        renderInventoryUI(elements.searchInput.value);
-        calculateTotal();
-    };
-
-    if (elements.exportButton) {
-        elements.exportButton.onclick = exportToCSV;
-    }
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = handleTabClick;
-    });
-
-    elements.searchInput.oninput = debounce(() => {
-        const activeTab = document.querySelector('.tab-btn.active').dataset.tab;
-        if (activeTab === 'craft-goals') renderItemsUI(elements.searchInput.value);
-        else renderInventoryUI(elements.searchInput.value);
-    }, 200);
-
-    elements.itemsContainer.addEventListener('click', (e) => {
-        if (e.target.closest('.qty-btn') || e.target.closest('.quantity-control') || e.target.closest('.tier-pip')) return;
-
-        const title = e.target.closest('.category-title');
-        if (title) {
-            const targetId = title.dataset.target;
-            const content = document.getElementById(targetId);
-            if (content) toggleSection(title, content);
+            list.appendChild(row);
         }
     });
 
-    elements.goalsControls.classList.add('active');
-    document.getElementById('inventory-input').style.display = 'none';
-    attachAccordionEventListeners();
+    if (!hasItems) {
+        list.innerHTML = `<div class="empty-state-small" style="padding: 20px 10px;">No scrappable items in inventory.</div>`;
+    }
+    
+    renderScrapperYield();
 }
 
-function debounce(func, delay) {
-    let timeout;
-    return function(...args) {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => func.apply(this, args), delay);
+function renderScrapperYield() {
+    const yieldList = document.getElementById('scrapper-yield-list');
+    const dismantleBtn = document.getElementById('dismantle-btn');
+    if (!yieldList || !dismantleBtn) return;
+
+    const totalYield = {};
+    let hasSelection = false;
+
+    Object.entries(scrapSelection).forEach(([invKey, scrapQty]) => {
+        if (scrapQty > 0) {
+            hasSelection = true;
+            const { name, tier } = parseKey(invKey);
+            const dbKey = getScrapDbKey(name, tier);
+            const scrapData = RECYCLE_DB[dbKey];
+            
+            if (scrapData) {
+                Object.entries(scrapData).forEach(([yItem, yQty]) => {
+                    totalYield[yItem] = (totalYield[yItem] || 0) + (yQty * scrapQty);
+                });
+            }
+        }
+    });
+
+    yieldList.innerHTML = '';
+    if (!hasSelection) {
+        yieldList.innerHTML = `<div class="empty-state-small" style="padding: 20px 10px;">Select items to see yield.</div>`;
+        dismantleBtn.disabled = true;
+    } else {
+        Object.entries(totalYield).sort().forEach(([item, qty]) => {
+            yieldList.appendChild(el('li', '', `
+                <div class="item-wrapper">${getIconHtml(item)} <span style="font-size: 0.9rem;">${item}</span></div>
+                <span style="color: var(--color-enough); font-weight: bold;">+${qty}</span>
+            `));
+        });
+        dismantleBtn.disabled = false;
+    }
+}
+function dismantleSelected() {
+    let itemsScrapped = false;
+    
+    Object.entries(scrapSelection).forEach(([invKey, scrapQty]) => {
+        if (scrapQty > 0 && userInventory[invKey] >= scrapQty) {
+            userInventory[invKey] -= scrapQty;
+            
+            const { name, tier } = parseKey(invKey);
+            const dbKey = getScrapDbKey(name, tier);
+            const scrapData = RECYCLE_DB[dbKey];
+            
+            if (scrapData) {
+                Object.entries(scrapData).forEach(([yItem, yQty]) => {
+                    const earned = yQty * scrapQty;
+                    userInventory[yItem] = (userInventory[yItem] || 0) + earned;
+                });
+            }
+            itemsScrapped = true;
+        }
+    });
+
+    if (itemsScrapped) {
+        scrapSelection = {}; 
+        calculateTotal(); 
+        renderInventoryUI(document.getElementById('search-input')?.value || ''); 
+        
+        const btn = document.getElementById('dismantle-btn');
+        const oldText = btn.innerText;
+        btn.innerText = "SCRAPPED!";
+        btn.style.backgroundColor = "var(--color-enough)";
+        btn.style.color = "#fff";
+        setTimeout(() => {
+            btn.innerText = oldText;
+            btn.style.backgroundColor = "";
+            btn.style.color = "";
+        }, 1500);
+    }
+}
+
+function appendReverseScrap(materialName) {
+    const container = document.getElementById('reverse-lookup-container');
+    const list = document.getElementById('reverse-lookup-list');
+    if (!container || !list || typeof RECYCLE_DB === 'undefined') return;
+
+    const safeIdName = materialName.replace(/[^a-zA-Z0-9]/g, '-');
+    const groupId = `lookup-group-${safeIdName}`;
+    
+    const existingGroup = document.getElementById(groupId);
+    if (existingGroup) {
+        existingGroup.classList.remove('flash-highlight');
+        void existingGroup.offsetWidth; 
+        existingGroup.classList.add('flash-highlight');
+        
+        const recyclerTabBtn = document.querySelector('.out-tab-btn[data-tab="output-scrapper"]');
+        if (recyclerTabBtn && !recyclerTabBtn.classList.contains('active')) {
+            recyclerTabBtn.classList.add('tab-alert');
+        }
+        return; 
+    }
+
+    let donors = [];
+    Object.entries(RECYCLE_DB).forEach(([junkName, yieldData]) => {
+        if (yieldData[materialName]) {
+            donors.push({ name: junkName, yield: yieldData[materialName] });
+        }
+    });
+
+    if (donors.length === 0) return; 
+
+    donors.sort((a,b) => b.yield - a.yield);
+
+    const groupDiv = el('div', 'lookup-group');
+    groupDiv.id = groupId;
+    
+    let html = `
+        <div class="lookup-header">
+            ${getIconHtml(materialName)} <span>${materialName}</span>
+            <button onclick="document.getElementById('${groupId}').remove(); if(document.getElementById('reverse-lookup-list').children.length === 0) document.getElementById('reverse-lookup-container').style.display='none';" style="margin-left:auto; background:none; border:none; color:var(--color-text-dim); cursor:pointer;">✕</button>
+        </div>
+    `;
+
+    const renderCard = (d) => `
+        <div class="suggestion-card" style="margin:0;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                ${getIconHtml(getBaseName(d.name))}
+                <div>
+                    <span style="color: var(--color-text); font-size: 0.85rem;">${d.name}</span><br>
+                    <span style="font-size: 0.75rem; color: var(--color-text-dim);">Yields: <span style="color: var(--color-enough);">+${d.yield}</span></span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    const topDonors = donors.slice(0, 4);
+    html += `<div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">`;
+    topDonors.forEach(d => { html += renderCard(d); });
+    html += `</div>`;
+
+    if (donors.length > 4) {
+        const remainingDonors = donors.slice(4);
+        const hiddenId = `hidden-${groupId}`;
+        
+        html += `
+            <div id="${hiddenId}" class="lookup-hidden-items">
+                <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
+        `;
+        remainingDonors.forEach(d => { html += renderCard(d); });
+        html += `</div></div>`;
+        
+        html += `
+            <button class="lookup-show-more-btn" onclick="
+                const hiddenBlock = document.getElementById('${hiddenId}');
+                const isExp = hiddenBlock.classList.toggle('expanded');
+                this.innerHTML = isExp ? '▲ Hide ${remainingDonors.length} sources' : '▼ Show ${remainingDonors.length} more sources';
+            ">▼ Show ${remainingDonors.length} more sources</button>
+        `;
+    }
+
+    groupDiv.innerHTML = html;
+    
+    list.insertBefore(groupDiv, list.firstChild);
+    container.style.display = 'block';
+
+    const recyclerTabBtn = document.querySelector('.out-tab-btn[data-tab="output-scrapper"]');
+    if (recyclerTabBtn && !recyclerTabBtn.classList.contains('active')) {
+        recyclerTabBtn.classList.add('tab-alert');
+    }
+}
+
+// --- LOADOUT UI ---
+
+const getGearStats = (name) => {
+    if (typeof GEAR_STATS === 'undefined') return {bp:15, safe:1, quick:4, util:0};
+    if (GEAR_STATS[name]) return GEAR_STATS[name];
+    
+    const romanName = name.replace(/ 1$/, ' I').replace(/ 2$/, ' II').replace(/ 3.*$/, ' III');
+    if (GEAR_STATS[romanName]) return GEAR_STATS[romanName];
+    
+    const searchName = name.toLowerCase().split(' (')[0]; 
+    const matchedKey = Object.keys(GEAR_STATS).find(k => k.toLowerCase().includes(searchName));
+    return matchedKey ? GEAR_STATS[matchedKey] : {bp:15, safe:1, quick:4, util:0};
+};
+
+function renderLoadoutUI() {
+    const s = currentLoadout.gear ? getGearStats(currentLoadout.gear.name) : {bp:15,safe:1,quick:4,util:0};
+    ['gear', 'shield', 'primary', 'secondary'].forEach(id => renderSlot(id));
+    
+    const cfg = [
+        {id:'backpack-grid', n:s.bp, p:'bp', f:'all', l:''}, 
+        {id:'quick-use-grid', n:s.quick, p:'quick', f:'quick', l:'Quick'}, 
+        {id:'dynamic-utility-container', n:s.util, p:'util', f:'Utility', l:'Util'}, 
+        {id:'secure-pocket-grid', n:s.safe, p:'safe', f:'safe', l:'🔒'}
+    ];
+
+    cfg.forEach(c => {
+        const cnt = document.getElementById(c.id); if (!cnt) return; cnt.innerHTML = '';
+        for (let i=1; i<=c.n; i++) {
+            const slotId = `${c.p}${i}`, div = el('div', 'loadout-slot', '', {'data-slot': slotId, 'data-filter': c.f, 'data-label': c.l});
+            cnt.appendChild(div); renderSlot(slotId, div);
+        }
+    });
+    
+    if (dom.backpackLabel) dom.backpackLabel.innerText = `BACKPACK (${s.bp})`;
+    renderSavedLoadouts();
+}
+
+function renderSlot(id, node = null) {
+    const slot = node || document.querySelector(`.loadout-slot[data-slot="${id}"]`); if (!slot) return;
+    const data = currentLoadout[id], map = {gear:'Amplifier', shield:'Shield', primary:'Primary', secondary:'Secondary'};
+    const label = slot.dataset.label || map[id] || '';
+    
+    if (data) {
+        const tierHtml = data.tier > 1 ? `<span style="position: absolute; top: 2px; left: 4px; color: var(--color-neon-blue); font-size: 0.75rem; font-family: 'Orbitron', sans-serif; font-weight: bold; text-shadow: 0 0 5px var(--color-neon-blue); z-index: 10;">${ROMANS[data.tier]}</span>` : '';
+        const qtyHtml = data.qty > 1 ? `<span class="slot-qty">${data.qty}</span>` : '';
+        
+        slot.innerHTML = `
+            <div class="slot-content">
+                ${tierHtml}
+                ${getIconHtml(getBaseName(data.name)).replace('item-icon','slot-icon')} 
+                ${qtyHtml}
+            </div>
+            <div class="remove-slot-item" data-action="clear-slot" data-slot="${id}">×</div>
+        `;
+    } else {
+        slot.innerHTML = `<div class="slot-placeholder">${label}</div>`;
+    }
+    
+    slot.className = `loadout-slot ${data?'filled':''}`;
+    slot.onclick = (e) => { if (!e.target.dataset.action) openModal(id, slot.dataset.filter); };
+}
+
+function renderSavedLoadouts() {
+    if(!dom.savedLoadoutsList) return; dom.savedLoadoutsList.innerHTML = '';
+    const keys = Object.keys(savedLoadouts).sort();
+    
+    if (keys.length === 0) {
+        dom.savedLoadoutsList.innerHTML = '<div class="empty-state-small">No saved loadouts yet.</div>';
+        return;
+    }
+
+    keys.forEach(name => {
+        const chip = el('div', `saved-loadout-chip ${name === editingName ? 'selected' : ''}`, 
+            `<span class="saved-loadout-name">${name}</span><button class="delete-saved-btn" data-action="del-save" data-name="${name}">×</button>`);
+        chip.onclick = (e) => { if(e.target.dataset.action !== 'del-save') loadPreset(name); };
+        dom.savedLoadoutsList.appendChild(chip);
+    });
+}
+
+function loadPreset(name) {
+    editingName = null;
+    const data = JSON.parse(JSON.stringify(savedLoadouts[name]));
+    dom.loadoutNameInput.value = name;
+    dom.loadoutMultiplier.value = data._mult || 1;
+    
+    for (let key in currentLoadout) delete currentLoadout[key];
+    Object.entries(data).forEach(([k, v]) => { if(k !== '_mult') currentLoadout[k] = v; });
+    
+    editingName = name; 
+    renderLoadoutUI();
+}
+
+function openModal(slotId, filter) {
+    activeSlotId = slotId;
+    const modal = document.getElementById('item-selector-modal'), list = document.getElementById('modal-items-list');
+    const search = document.getElementById('modal-search');
+    
+    modal.classList.remove('hidden'); list.innerHTML = ''; search.value = '';
+
+    const grouped = {};
+    Object.entries(ALL_ITEMS_FLAT).forEach(([name, d]) => {
+        const cat = d.category;
+        let v = (filter === 'all') || (cat === filter) || 
+                (filter === 'quick' && ['Utility','Medical','Grenades / Explosives'].includes(cat)) || 
+                (filter === 'safe' && cat !== 'Weapons' && cat !== 'Shields');
+        
+        if (v) { if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(name); }
+    });
+
+    Object.keys(grouped).sort().forEach(cat => {
+        const groupWrap = el('div', 'modal-category-group');
+        const h = el('div', 'modal-category-title collapsed', `<span>${CATEGORY_EMOJIS[cat]||'📦'} ${cat}</span><span class="toggle-icon">▶</span>`);
+        const content = el('div', 'modal-category-content collapsed');
+        
+        h.onclick = () => { 
+            const isCl = content.classList.toggle('collapsed'); 
+            h.classList.toggle('collapsed', isCl); 
+        };
+
+        grouped[cat].sort().forEach(name => {
+            const row = el('div', 'modal-item-row', `<div class="modal-item-info">${getIconHtml(name)} <span>${name}</span></div>`);
+            
+            if (cat === 'Weapons') {
+                const pips = el('div', 'tier-pips');
+                for (let i = 1; i <= 4; i++) {
+                    const pip = el('div', 'tier-pip');
+                    pip.onclick = (e) => { 
+                        e.stopPropagation(); 
+                        currentLoadout[activeSlotId] = {name, qty:1, tier:i}; 
+                        modal.classList.add('hidden'); 
+                        renderLoadoutUI(); 
+                    };
+                    pips.appendChild(pip);
+                }
+                row.appendChild(pips);
+            }
+            
+            row.addEventListener('click', () => { 
+                currentLoadout[activeSlotId] = {name, qty:1, tier:1}; 
+                modal.classList.add('hidden'); 
+                renderLoadoutUI(); 
+            });
+            content.appendChild(row);
+        });
+        
+        groupWrap.append(h, content); 
+        list.appendChild(groupWrap);
+    });
+
+    search.oninput = (e) => {
+        const term = e.target.value.toLowerCase();
+        document.querySelectorAll('.modal-category-group').forEach(group => {
+            let hasVisible = false;
+            group.querySelectorAll('.modal-item-row').forEach(row => {
+                const isVis = row.innerText.toLowerCase().includes(term);
+                row.style.display = isVis ? 'flex' : 'none';
+                if (isVis) hasVisible = true;
+            });
+            group.style.display = hasVisible ? 'block' : 'none';
+            if (term) group.querySelector('.modal-category-content').classList.remove('collapsed');
+        });
     };
+    
+    document.getElementById('close-modal-btn').onclick = () => modal.classList.add('hidden');
+}
+
+// --- GLOBAL EVENTS ---
+function initEvents() {
+    document.addEventListener('click', e => {
+        const t = e.target.closest('[data-action], .accordion-title, .craft-item-toggle'); if (!t) return;
+        
+        if (t.classList.contains('accordion-title') || t.classList.contains('craft-item-toggle')) {
+            const target = document.getElementById(t.dataset.target);
+            if (target) {
+                const isCl = target.classList.toggle('collapsed');
+                const arrow = t.querySelector('.toggle-icon') || t.querySelector('.toggle-arrow');
+                if (arrow) arrow.textContent = isCl ? '▶' : '▼';
+                if (!isCl) t.classList.add('expanded'); else t.classList.remove('expanded');
+            }
+            return;
+        }
+
+        const act = t.dataset.action, it = t.dataset.item, tr = t.dataset.tier;
+        
+        if (act === 'inc' || act === 'dec') {
+            const k = getKey(it, tr), step = getYield(it);
+            userSelection[k] = Math.max(0, (userSelection[k]||0) + (act === 'inc' ? step : -step));
+            renderItemsUI(dom.searchInput.value);
+        } 
+        else if (act === 'set-tier') { uiTiers[it] = parseInt(tr); renderItemsUI(dom.searchInput.value); }
+        else if (act === 'clear-slot') { delete currentLoadout[t.dataset.slot]; renderLoadoutUI(); }
+        else if (act === 'toggle-cat') {
+            const cid = t.dataset.target, isCol = document.getElementById(cid).classList.toggle('collapsed');
+            t.classList.toggle('collapsed'); isCol ? openCats.delete(cid) : openCats.add(cid);
+            t.querySelector('.toggle-icon').textContent = isCol ? '▶' : '▼';
+        }
+        else if (act === 'del-save') {
+            if (editingName === t.dataset.name) editingName = null;
+            delete savedLoadouts[t.dataset.name]; storage.set(STATE_KEYS.SLDT, savedLoadouts); renderLoadoutUI();
+        }
+        else if (act === 'export-csv') { exportToCSV(); }
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
+        document.querySelectorAll('.tab-btn, .tab-content').forEach(x => x.classList.remove('active'));
+        b.classList.add('active'); 
+        const target = document.getElementById(b.dataset.tab);
+        if (target) target.classList.add('active'); 
+        calculateTotal();
+    });
+
+    document.querySelectorAll('.out-tab-btn').forEach(b => b.onclick = () => {
+        document.querySelectorAll('.out-tab-btn, .out-tab-content').forEach(x => {
+            x.classList.remove('active');
+            if (x.classList.contains('out-tab-content')) x.style.display = 'none';
+        });
+        b.classList.add('active');
+        b.classList.remove('tab-alert'); 
+        
+        const content = document.getElementById(b.dataset.tab);
+        if (content) {
+            content.classList.add('active');
+            content.style.display = 'block';
+        }
+        if (b.dataset.tab === 'output-scrapper') {
+            renderSmartSuggestions();
+            renderScrapperUI();
+        }
+    });
+
+    const clearLookupBtn = document.getElementById('clear-lookup-btn');
+    if (clearLookupBtn) {
+        clearLookupBtn.onclick = () => {
+            document.getElementById('reverse-lookup-list').innerHTML = '';
+            document.getElementById('reverse-lookup-container').style.display = 'none';
+        };
+    }
+
+    if (dom.filterHideEmpty) dom.filterHideEmpty.onclick = () => { dom.filterHideEmpty.classList.toggle('active'); renderInventoryUI(dom.searchInput.value); };
+    if (dom.filterShowRequired) dom.filterShowRequired.onclick = () => { dom.filterShowRequired.classList.toggle('active'); renderInventoryUI(dom.searchInput.value); };
+    
+    if (dom.resetInventoryBtn) {
+        dom.resetInventoryBtn.onclick = () => {
+            if(confirm("Clear inventory ONLY?")) {
+                for (let k in userInventory) delete userInventory[k];
+                renderInventoryUI(); calculateTotal();
+            }
+        };
+    }
+
+    if (dom.dismantleBtn) dom.dismantleBtn.onclick = dismantleSelected;
+
+    dom.resetButton.onclick = () => {
+        if(confirm("Clear all Crafting Goals and current Loadout? (Your Inventory and Saved Presets will remain safe)")) {
+            for (let k in userSelection) delete userSelection[k];
+            for (let k in currentLoadout) delete currentLoadout[k];
+            editingName = null;
+            if(dom.loadoutNameInput) dom.loadoutNameInput.value = '';
+            if(dom.loadoutMultiplier) dom.loadoutMultiplier.value = 1;
+
+            uiTiers = {};
+            openCats.clear();
+            openTreeNodes.clear();
+            scrapSelection = {};
+            
+            renderItemsUI();
+            renderLoadoutUI();
+            calculateTotal();
+
+            dom.resetButton.innerText = "CLEARED!";
+            setTimeout(() => { dom.resetButton.innerText = "RESET ALL CRAFTING"; }, 1500);
+        }
+    };
+
+    dom.searchInput.oninput = (e) => { 
+        renderItemsUI(e.target.value); 
+        renderInventoryUI(e.target.value); 
+    };
+
+    // ФИКС QTY LOADOUTS: Оживили кнопки + и - для множителя лодаута
+    if (dom.loadoutMultiplier) dom.loadoutMultiplier.oninput = calculateTotal;
+    if (dom.loadoutDec) dom.loadoutDec.onclick = () => { dom.loadoutMultiplier.value = Math.max(1, parseInt(dom.loadoutMultiplier.value || 1) - 1); calculateTotal(); };
+    if (dom.loadoutInc) dom.loadoutInc.onclick = () => { dom.loadoutMultiplier.value = parseInt(dom.loadoutMultiplier.value || 1) + 1; calculateTotal(); };
+
+    if (dom.saveLoadoutBtn) {
+        dom.saveLoadoutBtn.onclick = () => {
+            const n = dom.loadoutNameInput.value.trim();
+            const isNotEmpty = Object.keys(currentLoadout).length > 0;
+
+            if (n && isNotEmpty) {
+                const data = JSON.parse(JSON.stringify(currentLoadout));
+                data._mult = dom.loadoutMultiplier.value || 1;
+                savedLoadouts[n] = data;
+                storage.set(STATE_KEYS.SLDT, savedLoadouts);
+
+                editingName = null;
+                dom.loadoutNameInput.value = '';
+                dom.loadoutMultiplier.value = 1;
+                for (let key in currentLoadout) delete currentLoadout[key];
+
+                renderLoadoutUI();
+                calculateTotal();
+                
+                const oldText = dom.saveLoadoutBtn.innerText;
+                dom.saveLoadoutBtn.innerText = "SAVED & CLEARED!";
+                dom.saveLoadoutBtn.style.borderColor = "var(--color-enough)";
+                setTimeout(() => {
+                    dom.saveLoadoutBtn.innerText = oldText;
+                    dom.saveLoadoutBtn.style.borderColor = "";
+                }, 1500);
+            } else {
+                const target = !n ? dom.loadoutNameInput : dom.saveLoadoutBtn;
+                target.classList.add('shake-error');
+                setTimeout(() => target.classList.remove('shake-error'), 400);
+            }
+        };
+    }
+
+    if (dom.clearLoadoutBtn) {
+        dom.clearLoadoutBtn.onclick = () => { 
+            editingName = null; dom.loadoutNameInput.value = ''; dom.loadoutMultiplier.value = 1; 
+            for (let key in currentLoadout) delete currentLoadout[key]; renderLoadoutUI(); 
+        };
+    }
+}
+
+// --- INITIALIZATION ---
+function renderItemsUI(f = '') {
+    if (!dom.itemsContainer) return;
+    dom.itemsContainer.innerHTML = '';
+    
+    // ФИКС: Проверка поиска и приведение в нижний регистр
+    const hasSearch = f.trim().length > 0;
+    const searchTerm = f.toLowerCase();
+
+    Object.entries(ALL_CRAFT_DATA).forEach(([cat, map]) => {
+        // ФИКС: Поиск работает и по имени предмета, и по имени категории (например "Weapons")
+        const isCatMatch = cat.toLowerCase().includes(searchTerm);
+        const filtered = Object.keys(map).filter(i => isCatMatch || i.toLowerCase().includes(searchTerm));
+        if (!filtered.length) return;
+        
+        const catId = `cat-${cat.replace(/\s/g, '-')}`;
+        const isOpen = hasSearch || openCats.has(catId);
+        
+        const group = el('div', 'category-group');
+        group.innerHTML = `<h3 class="category-title ${isOpen?'':'collapsed'}" data-action="toggle-cat" data-target="${catId}">
+            <span>${CATEGORY_EMOJIS[cat]||'💎'} ${cat}</span><span class="toggle-icon">${isOpen?'▼':'▶'}</span></h3>`;
+        const inner = el('div', 'items-list-content-inner');
+        
+        filtered.forEach(name => {
+            const tier = uiTiers[name] || 1, qty = userSelection[getKey(name, tier)] || 0;
+            const row = el('div', 'item-row');
+            let pips = WEAPON_UPGRADES?.[name] ? `<div class="tier-pips">${[1,2,3,4].map(t=>`<div class="tier-pip ${t<=tier?'active':''}" data-action="set-tier" data-item="${name}" data-tier="${t}"></div>`).join('')}</div>` : '';
+            
+            // ФИКС: Кнопки вызывают onchange у input, чтобы данные точно улетели в базу
+            row.innerHTML = `<div class="item-wrapper">${getIconHtml(name)}<div class="item-info-col"><span>${name}</span>${pips}</div></div>
+                <div class="quantity-control">
+                    <button class="qty-btn" onclick="let i=this.nextElementSibling; i.value=Math.max(0, parseInt(i.value)-1); i.dispatchEvent(new Event('change'))">-</button>
+                    <input type="number" class="qty-input" value="${qty}" data-item="${name}" data-tier="${tier}">
+                    <button class="qty-btn" onclick="let i=this.previousElementSibling; i.value=(parseInt(i.value)||0)+1; i.dispatchEvent(new Event('change'))">+</button>
+                </div>`;
+            
+            const input = row.querySelector('.qty-input');
+            input.onchange = (e) => {
+                const val = safeInt(e.target.value);
+                const k = getKey(name, tier);
+                userSelection[k] = val;
+                e.target.value = val; 
+            };
+
+            inner.appendChild(row);
+        });
+        const content = el('div', `items-list-content ${isOpen?'':'collapsed'}`, '', {id: catId});
+        content.appendChild(inner); group.append(content); dom.itemsContainer.appendChild(group);
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    initializeData();
-    getDOMElements();
+    const ids = [
+        'base-total-list', 'items-container', 'inventory-container', 'search-input', 'reset-button', 
+        'loadout-multiplier', 'loadout-dec', 'loadout-inc', 'backpack-label', 'save-loadout-btn', 
+        'loadout-name-input', 'saved-loadouts-list', 'total-net-worth', 'clear-loadout-btn',
+        'filter-hide-empty', 'filter-show-required', 'reset-inventory-btn', 'dismantle-btn',
+        'smart-suggestions-list', 'scrapper-inventory-list', 'scrapper-yield-list'
+    ];
+    
+    ids.forEach(id => {
+        dom[id.replace(/-([a-z])/g, g => g[1].toUpperCase())] = document.getElementById(id);
+    });
+
+    if (typeof initializeData === 'function') initializeData();
+    initEvents();
+    
     renderItemsUI();
     renderInventoryUI();
-    attachEventListeners();
+    renderLoadoutUI();
     calculateTotal();
 });
