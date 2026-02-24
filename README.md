@@ -2,48 +2,50 @@
 A tool for crafting calculations and efficient resource management.
 
 ## 🌌 About the Project
-ARC Raiders // Advanced Resource Calculator is an interactive web tool designed to simplify the crafting process in the game, where players must collect basic materials to create complex gear, weapons, and consumables.
+ARC Raiders // Advanced Resource Calculator is an interactive web tool designed to simplify the crafting process. In a game where stash space is your most limited resource, this tool helps you prioritize exactly what to bring back from a raid.
 
-The calculator automatically computes the total amount of raw (base) resources needed to achieve set goals and compares this against your inventory. This functionality is crucial for optimizing inventory space and helps you plan for the future. It ensures you only gather the materials you are truly missing, avoiding unnecessary resource clutter, and is designed so you know exactly how much of a particular material you should store for future crafting or your next raid. With this tool, you always know exactly what to prioritize.
+The calculator automatically computes the total amount of raw (base) materials needed for complex gear and compares it against your current inventory. It ensures you only gather what you truly need, helping you plan for future crafting goals or your next raid with surgical precision.
 
 ## ✨ Key Features
-Base Resource Calculation: Automatically breaks down complex crafting into the most basic raw materials.
+The Recycler (Smart Suggestions): New in v1.1. Automatically scans your stash and suggests which items can be dismantled to finish your current crafting goals.
 
-Inventory Tracking & Space Optimization: Save your current inventory (using localStorage) and see how many resources you are truly missing. This prevents resource hoarding, helps optimize your limited inventory space, and gives you a clear indication of resource storage priorities for future raids.
+Loadout Presets: New in v1.1. Build and save specific raid kits (gear/meds/ammo) to see their cost separately from your long-term objectives.
 
-Hierarchical Recipe Breakdown: A detailed view of all intermediate materials and their components in the form of an interactive tree.
+Recursive Recipe Breakdown: Breaks down complex items into multiple layers of base raw materials.
 
-Neon UI: A stylish and high-contrast, sci-fi interface inspired by cyberpunk/retro-futurism.
+Inventory Tracking & Stash Value: Save your current counts (localStorage) and see the total Credit (©) value of your entire hoard.
 
-Search and Filtering: Quickly search for any item to add to your goals or check its presence in your inventory.
+Hierarchical Tree View: Interactive breakdown of all intermediate materials and their components.
+
+Neon UI: High-contrast, sci-fi interface inspired by the aesthetic of ARC Raiders.
 
 ## 🛠️ Technologies
-The project is built using a minimalist stack:
+The project is built using a minimalist, high-performance stack:
 
 HTML5: Web page structure.
 
-CSS3: Completely custom, neon, and responsive design (using CSS Variables to manage the color scheme).
+CSS3: Custom neon, responsive design (using CSS Variables).
 
-JavaScript (Vanilla JS): Logic for calculations, state management (crafting goals and inventory) via Local Storage, and rendering of the entire interface.
+JavaScript (Vanilla JS): Pure logic for recursive calculations, state management, and real-time DOM updates. No frameworks, no lag.
 
 ## 🌐 How to Use
 
 ### 📌 1) Set Crafting Goals
-This defines what you want to build. Go to **Crafting Goals** (left panel), choose your target items, and adjust quantities using the ➕/➖ buttons or manual entry.
+Choose your target weapons or gear in the Crafting Goals panel. Adjust quantities to see the total material requirements update instantly.
 
 ### 📦 2) Enter Your Inventory
-This tells the app what resources you already have. Open the **"My Inventory"** tab and enter your raw resource counts (e.g., Metal Parts, Fabric, Chemicals). Your data is saved automatically.
+Enter your resource counts in the "My Inventory" tab. You can add items by Stacks (📦) or Single Units (🧩) to match your in-game view.
 
 ### 📊 3) Check Total Resource Requirements
-This shows the full list of needed base resources in the **“Total Base Resources Needed”** panel. Colors indicate balance: **🟥 Red** = Missing; **🟩 Green** = You’re covered.
+If you are missing resources, check the Recycler list. It shows which items in your inventory can be dismantled to produce the missing materials.
 
 ### 🔍 4) See Detailed Crafting Breakdown
-This helps understand dependencies. **Expand “Total Crafting Ingredients”** (intermediate components) and **Expand “Detailed Recipe Breakdown”** (full dependency chains).
+Use the Loadouts feature to calculate the cost of your signature raid kits. Use the multiplier to see the cost for 5x or 10x backup sets.
 
 ---
 
 ### 🧠 Why This Is Useful
-This tool is essential for every raid by **optimizing gathering priority**, **maximizing inventory efficiency**, and **supporting complex multi-level crafting chains**.
+This tool is essential for maximizing raid efficiency, optimizing stash space, and managing complex multi-level crafting chains without the headache of manual math.
 
 ## ⚙️ Installation and Setup
 The project is a standalone HTML file, making it easy to deploy.
