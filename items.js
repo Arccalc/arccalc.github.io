@@ -300,7 +300,10 @@ let BASE_RESOURCES = new Set();
 let CRAFTABLE_ITEMS = new Set();
 
 function getIconHtml(itemName) {
-    return IMAGE_MAP[itemName] ? `<img src="img/${IMAGE_MAP[itemName]}" class="item-icon" alt="${itemName}" onerror="this.src='img/default.png'">` : ''; 
+    if (!IMAGE_MAP[itemName]) return '';
+    const iconFile = IMAGE_MAP[itemName];
+    // Заменяем default.png на Icon_Coins.png, который у тебя ЕСТЬ в папке
+    return `<img src="img/${iconFile}" class="item-icon" alt="${itemName}" onerror="this.onerror=null; this.src='img/Icon_Coins.png'">`; 
 }
 
 function initializeData() {
