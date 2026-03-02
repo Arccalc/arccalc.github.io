@@ -3,11 +3,11 @@
  * FINAL VERSION: Standalone Tier Pricing, Inventory Steps, UI Sync, SCRAPPER & REVERSE LOOKUP
  */
 
-const STATE_KEYS = { 
-    SEL: 'arcRaidersSelection', 
-    INV: 'arcRaidersInventory', 
-    LDT: 'arcRaidersLoadout', 
-    SLDT: 'arcRaidersSavedLoadouts' 
+const STATE_KEYS = {
+    SEL: 'arcRaidersSelection',
+    INV: 'arcRaidersInventory',
+    LDT: 'arcRaidersLoadout',
+    SLDT: 'arcRaidersSavedLoadouts'
 };
 
 const ROMANS = { 1: 'I', 2: 'II', 3: 'III', 4: 'IV' };
@@ -23,10 +23,10 @@ const GEAR_STATS = {
 
 // --- UTILS ---
 const el = (tag, cl = '', html = '', atk = {}) => {
-    const n = document.createElement(tag); 
-    if (cl) n.className = cl; 
+    const n = document.createElement(tag);
+    if (cl) n.className = cl;
     if (html) n.innerHTML = html;
-    Object.entries(atk).forEach(([k, v]) => n.setAttribute(k, v)); 
+    Object.entries(atk).forEach(([k, v]) => n.setAttribute(k, v));
     return n;
 };
 
@@ -41,7 +41,7 @@ const storage = {
     set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
 
-const dom = {}; 
+const dom = {};
 
 const getStackSize = (n) => (typeof STACK_SIZES !== 'undefined' && STACK_SIZES[n]) ? STACK_SIZES[n] : 1;
 const getYield = (n) => (typeof CRAFT_YIELDS !== 'undefined' && CRAFT_YIELDS[n]) ? CRAFT_YIELDS[n] : 1;
@@ -61,33 +61,33 @@ const getRecipe = (n) => {
 
 const isCraftable = (n) => CRAFTABLE_ITEMS?.has(n);
 const getKey = (n, t) => t > 1 ? `${n}|${t}` : n;
-const parseKey = (k) => { 
-    const p = k.split('|'); 
-    return { name: p[0], tier: p[1] ? parseInt(p[1]) : 1 }; 
+const parseKey = (k) => {
+    const p = k.split('|');
+    return { name: p[0], tier: p[1] ? parseInt(p[1]) : 1 };
 };
 
 // --- REACTIVE STATE ---
 const createReactive = (key, initial) => new Proxy(initial, {
     set(target, prop, val) {
-        target[prop] = val; 
+        target[prop] = val;
         storage.set(key, target);
         if (key === STATE_KEYS.LDT && editingName) {
             savedLoadouts[editingName] = JSON.parse(JSON.stringify(target));
             savedLoadouts[editingName]._mult = dom.loadoutMultiplier?.value || 1;
             storage.set(STATE_KEYS.SLDT, savedLoadouts);
         }
-        calculateTotal(); 
+        calculateTotal();
         return true;
     },
     deleteProperty(target, prop) {
-        delete target[prop]; 
+        delete target[prop];
         storage.set(key, target);
         if (key === STATE_KEYS.LDT && editingName) {
             savedLoadouts[editingName] = JSON.parse(JSON.stringify(target));
             savedLoadouts[editingName]._mult = dom.loadoutMultiplier?.value || 1;
             storage.set(STATE_KEYS.SLDT, savedLoadouts);
         }
-        calculateTotal(); 
+        calculateTotal();
         return true;
     }
 });
@@ -98,8 +98,8 @@ let currentLoadout = createReactive(STATE_KEYS.LDT, storage.get(STATE_KEYS.LDT))
 let savedLoadouts = storage.get(STATE_KEYS.SLDT);
 
 let editingName = null, activeSlotId = null, openCats = new Set();
-let uiTiers = {}; 
-let invTiers = {}; 
+let uiTiers = {};
+let invTiers = {};
 let scrapSelection = {}; // Состояние для ручного распылителя
 let openTreeNodes = new Set(); // Для Fix QA 1.2
 
@@ -110,7 +110,7 @@ let requiredBaseResources = new Set();
 function calculateTotal() {
     const goalsNeed = {}, ldtNeed = {};
     const mult = parseInt(dom.loadoutMultiplier?.value) || 1;
-    let netWorth = 0; 
+    let netWorth = 0;
 
     const breakdown = (item, qty, targetObj) => {
         targetObj[item] = (targetObj[item] || 0) + qty;
@@ -118,7 +118,7 @@ function calculateTotal() {
         if (r) {
             const yieldVal = getYield(item);
             const cycles = Math.ceil(qty / yieldVal);
-            
+
             Object.entries(r).forEach(([ing, iq]) => {
                 breakdown(ing, iq * cycles, targetObj);
             });
@@ -127,10 +127,10 @@ function calculateTotal() {
 
     const processSource = (src, targetNeed) => {
         Object.entries(src).forEach(([k, q]) => {
-            if (q <= 0) return; 
-            const { name, tier } = parseKey(k); 
+            if (q <= 0) return;
+            const { name, tier } = parseKey(k);
             breakdown(name, q, targetNeed);
-            
+
             if (tier > 1 && WEAPON_UPGRADES?.[name]) {
                 for (let t = 2; t <= tier; t++) {
                     const upg = WEAPON_UPGRADES[name][t];
@@ -146,12 +146,12 @@ function calculateTotal() {
     processSource(selFlat, goalsNeed);
 
     const ldtFlat = {};
-    Object.values(currentLoadout).forEach(d => { 
-        if (d?.name) { 
-            const q = (d.qty || 1) * mult; 
-            const k = getKey(d.name, d.tier); 
-            ldtFlat[k] = (ldtFlat[k] || 0) + q; 
-        } 
+    Object.values(currentLoadout).forEach(d => {
+        if (d?.name) {
+            const q = (d.qty || 1) * mult;
+            const k = getKey(d.name, d.tier);
+            ldtFlat[k] = (ldtFlat[k] || 0) + q;
+        }
     });
     processSource(ldtFlat, ldtNeed);
 
@@ -159,14 +159,14 @@ function calculateTotal() {
     Object.entries(userInventory).forEach(([k, q]) => {
         if (q > 0) {
             const { name, tier } = parseKey(k);
-            
+
             // ФИКС Ресайклера: Мы больше не используем breakdown() для инвентаря.
             // Теперь система видит только сырые ресурсы, что заставляет Ресайклер 
             // корректно предлагать распыление готовых предметов.
             totalHave[name] = (totalHave[name] || 0) + q;
-            
+
             const y = getYield(name);
-            const p = getPrice(name, tier); 
+            const p = getPrice(name, tier);
             netWorth += (q / y) * p;
         }
     });
@@ -182,14 +182,14 @@ function calculateTotal() {
     if (dom.totalNetWorth) {
         dom.totalNetWorth.innerText = `${Math.floor(netWorth).toLocaleString()} ©`;
         dom.totalNetWorth.classList.remove('update-pulse');
-        void dom.totalNetWorth.offsetWidth; 
+        void dom.totalNetWorth.offsetWidth;
         dom.totalNetWorth.classList.add('update-pulse');
     }
 
     renderOutput(goalsNeed, ldtNeed, totalHave);
     renderIngredients(selFlat, ldtFlat, totalHave);
     renderRecipeBreakdown(selFlat, ldtFlat);
-    
+
     // Обновляем данные скраппера при любых изменениях инвентаря или целей
     if (typeof renderSmartSuggestions === 'function') renderSmartSuggestions();
     if (typeof renderScrapperUI === 'function') renderScrapperUI();
@@ -197,18 +197,18 @@ function calculateTotal() {
 
 function renderOutput(goalsNeed, ldtNeed, have) {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-    if (!dom.baseTotalList) return; 
+    if (!dom.baseTotalList) return;
     dom.baseTotalList.innerHTML = '';
-    
+
     const draw = (data, title) => {
         const baseData = Object.entries(data).filter(([n]) => BASE_RESOURCES.has(n)).sort();
         if (!baseData.length) return;
-        
+
         dom.baseTotalList.appendChild(el('div', 'output-divider', title));
         baseData.forEach(([n, q]) => {
             const h = have[n] || 0;
             const need = Math.max(0, q - h);
-            
+
             // Строка с классом clickable-resource для вызова Reverse Lookup
             const li = el('li', 'clickable-resource', `
                 <div class="item-wrapper">${getIconHtml(n)} ${n}</div>
@@ -216,23 +216,23 @@ function renderOutput(goalsNeed, ldtNeed, have) {
                     <span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
                     <span class="base-total-label">Need: ${need} (Have: ${h})</span>
                 </span>`, { title: "Click to find scrap sources" });
-            
+
             li.onclick = () => appendReverseScrap(n);
             dom.baseTotalList.appendChild(li);
         });
     };
-    
+
     if (tab === 'craft-goals') draw(goalsNeed, "RESOURCES FOR GOALS");
     else if (tab === 'loadouts') draw(ldtNeed, "RESOURCES FOR LOADOUT");
-    else { 
-        draw(goalsNeed, "CRAFTING GOALS TOTAL"); 
-        draw(ldtNeed, "LOADOUT TOTAL"); 
+    else {
+        draw(goalsNeed, "CRAFTING GOALS TOTAL");
+        draw(ldtNeed, "LOADOUT TOTAL");
     }
 }
 function renderIngredients(sel, ldt, have) {
     const list = document.getElementById('craft-total-list'); if (!list) return; list.innerHTML = '';
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-    
+
     const getInter = (source) => {
         let inter = {};
         const collect = (n, q, t = 1) => {
@@ -241,10 +241,10 @@ function renderIngredients(sel, ldt, have) {
                 const yieldVal = getYield(n);
                 const cycles = Math.ceil(q / yieldVal);
                 Object.entries(r).forEach(([ing, iq]) => {
-                    if (isCraftable(ing)) { 
-                        const total = iq * cycles; 
-                        inter[ing] = (inter[ing] || 0) + total; 
-                        collect(ing, total, 1); 
+                    if (isCraftable(ing)) {
+                        const total = iq * cycles;
+                        inter[ing] = (inter[ing] || 0) + total;
+                        collect(ing, total, 1);
                     }
                 });
             }
@@ -267,7 +267,7 @@ function renderIngredients(sel, ldt, have) {
         });
         return inter;
     };
-    
+
     const drawInter = (data, title) => {
         if (!Object.keys(data).length) return;
         list.appendChild(el('div', 'output-divider', title));
@@ -279,7 +279,7 @@ function renderIngredients(sel, ldt, have) {
                 <span class="base-total-label">Need: ${q} (Have: ${h})</span></span>`));
         });
     };
-    
+
     if (tab !== 'loadouts') drawInter(getInter(sel), "INGREDIENTS FOR GOALS");
     if (tab !== 'craft-goals') drawInter(getInter(ldt), "INGREDIENTS FOR LOADOUT");
 }
@@ -287,26 +287,49 @@ function renderIngredients(sel, ldt, have) {
 function renderInventoryUI(f = '') {
     if (!dom.inventoryContainer) return;
     dom.inventoryContainer.innerHTML = '';
-    const hideEmpty = document.getElementById('filter-hide-empty')?.classList.contains('active');
-    const showReq = document.getElementById('filter-show-required')?.classList.contains('active');
-    const groupedResources = {};
-    
+
+    const hideEmpty = dom.filterHideEmpty?.classList.contains('active');
+    const showReq = dom.filterShowRequired?.classList.contains('active');
+    const showRec = dom.filterShowRecycle?.classList.contains('active');
+
     const hasSearch = f.trim().length > 0;
     const searchTerm = f.toLowerCase();
+    const groupedResources = {};
+
+    const checkDirectlyNeeded = (res) => requiredBaseResources.has(res);
+    const checkIsRecycleSource = (res) => {
+        if (typeof RECYCLE_DB !== 'undefined') {
+            for (let t = 1; t <= 4; t++) {
+                const dbKey = getScrapDbKey(res, t);
+                const scrapYield = RECYCLE_DB[dbKey];
+                if (scrapYield) {
+                    for (const neededRes of requiredBaseResources) {
+                        if (scrapYield[neededRes]) return true;
+                    }
+                }
+            }
+        }
+        return false;
+    };
 
     Object.keys(ALL_ITEMS_FLAT).forEach(res => {
         const cat = ALL_ITEMS_FLAT[res].category || 'Misc';
         // ФИКС ПОИСКА ПО КАТЕГОРИИ: теперь ищем и в имени предмета, и в имени категории
         if (res.toLowerCase().includes(searchTerm) || cat.toLowerCase().includes(searchTerm)) {
-            if (showReq && !requiredBaseResources.has(res)) return;
-            
+
+            const isDirect = checkDirectlyNeeded(res);
+            const isRecycle = checkIsRecycleSource(res);
+
+            if (showReq && !isDirect) return;
+            if (showRec && !isRecycle) return;
+
             if (hideEmpty) {
                 let hasAny = false;
-                for (let t=1; t<=4; t++) { if ((userInventory[getKey(res, t)] || 0) > 0) hasAny = true; }
+                for (let t = 1; t <= 4; t++) { if ((userInventory[getKey(res, t)] || 0) > 0) hasAny = true; }
                 if (!hasAny) return;
             }
 
-            if (!groupedResources[cat]) groupedResources[cat] = []; 
+            if (!groupedResources[cat]) groupedResources[cat] = [];
             groupedResources[cat].push(res);
         }
     });
@@ -314,32 +337,36 @@ function renderInventoryUI(f = '') {
     Object.keys(groupedResources).sort().forEach(cat => {
         const catId = `inv-cat-${cat.replace(/\s/g, '-')}`;
         const isOpen = hasSearch || openCats.has(catId);
-        
+
         const group = el('div', 'category-group');
-        group.innerHTML = `<h3 class="category-title ${isOpen?'':'collapsed'}" data-action="toggle-cat" data-target="${catId}">
-            <span>${CATEGORY_EMOJIS[cat]||'📦'} ${cat}</span><span class="toggle-icon">${isOpen?'▼':'▶'}</span></h3>`;
+        group.innerHTML = `<h3 class="category-title ${isOpen ? '' : 'collapsed'}" data-action="toggle-cat" data-target="${catId}">
+            <span>${CATEGORY_EMOJIS[cat] || '📦'} ${cat}</span><span class="toggle-icon">${isOpen ? '▼' : '▶'}</span></h3>`;
         const inner = el('div', 'items-list-content-inner');
 
         groupedResources[cat].sort().forEach(res => {
+            const isDirect = checkDirectlyNeeded(res);
+            const isRecycle = checkIsRecycleSource(res);
+            const isAnyNeeded = isDirect || isRecycle;
+
             const tier = invTiers[res] || 1;
             const itemKey = getKey(res, tier);
             const stackSize = getStackSize(res), currentTotal = userInventory[itemKey] || 0;
             const stacks = Math.floor(currentTotal / stackSize), remainder = currentTotal % stackSize;
-            
+
             const price = getPrice(res, tier);
             const yieldVal = getYield(res);
             const rowValue = Math.floor((currentTotal / yieldVal) * price);
 
             const row = el('div', 'inventory-input-container');
-            
+
             let pipsHtml = '';
             if (WEAPON_UPGRADES?.[res]) {
-                pipsHtml = `<div class="tier-pips" style="margin-top:4px;">${[1,2,3,4].map(t => 
-                    `<div class="tier-pip ${t===tier?'active':''}" onclick="event.stopPropagation(); invTiers['${res}']=${t}; renderInventoryUI('${f}')"></div>`
+                pipsHtml = `<div class="tier-pips" style="margin-top:4px;">${[1, 2, 3, 4].map(t =>
+                    `<div class="tier-pip ${t === tier ? 'active' : ''}" onclick="event.stopPropagation(); invTiers['${res}']=${t}; renderInventoryUI('${f}')"></div>`
                 ).join('')}</div>`;
             }
 
-            const itemInfo = el('div', 'item-wrapper', `
+            const itemInfo = el('div', `item-wrapper ${isAnyNeeded ? 'highlight-needed' : ''}`, `
                 ${getIconHtml(res)} 
                 <div class="inv-item-info">
                     <span>${res} ${tier > 1 ? ROMANS[tier] : ''}</span>
@@ -349,21 +376,21 @@ function renderInventoryUI(f = '') {
             `);
 
             const calcWrapper = el('div', 'inventory-calc-wrapper');
-            
+
             const createGroup = (icon, val, onUpdate, step = 1) => {
                 const g = el('div', 'inv-stack-group'), i = el('span', 'inv-icon', icon);
-                const d = el('button', 'inv-stepper', '−', {tabindex: '-1'});
-                const inc = el('button', 'inv-stepper', '+', {tabindex: '-1'});
-                const input = el('input', 'inv-stack-input', '', {type: 'number', placeholder: '0', min: '0', value: val > 0 ? val : ''});
-                
+                const d = el('button', 'inv-stepper', '−', { tabindex: '-1' });
+                const inc = el('button', 'inv-stepper', '+', { tabindex: '-1' });
+                const input = el('input', 'inv-stack-input', '', { type: 'number', placeholder: '0', min: '0', value: val > 0 ? val : '' });
+
                 input.onchange = (e) => {
-                    e.target.value = safeInt(e.target.value); 
+                    e.target.value = safeInt(e.target.value);
                     onUpdate();
                 };
 
                 d.onclick = () => { input.value = Math.max(0, safeInt(input.value) - step); input.dispatchEvent(new Event('change')); };
                 inc.onclick = () => { input.value = safeInt(input.value) + step; input.dispatchEvent(new Event('change')); };
-                g.append(i, d, input, inc); return {g, input};
+                g.append(i, d, input, inc); return { g, input };
             };
 
             const totalDisp = el('div', `inv-total-display ${currentTotal > 0 ? 'has-items' : ''}`, `
@@ -375,11 +402,11 @@ function renderInventoryUI(f = '') {
                 const sVal = parseInt(sGroup.input.value) || 0, rVal = parseInt(rGroup.input.value) || 0;
                 const newTotal = Math.max(0, (sVal * stackSize) + rVal);
                 userInventory[itemKey] = newTotal;
-                
+
                 const newRowValue = Math.floor((newTotal / yieldVal) * price);
                 const qtySpan = totalDisp.querySelector('.row-total-qty');
                 const valSpan = totalDisp.querySelector('.row-value-disp');
-                
+
                 if (qtySpan) qtySpan.innerText = `= ${newTotal}`;
                 if (valSpan) valSpan.innerText = newRowValue > 0 ? `${newRowValue.toLocaleString()} ©` : '';
                 totalDisp.className = `inv-total-display ${newTotal > 0 ? 'has-items' : ''}`;
@@ -387,13 +414,13 @@ function renderInventoryUI(f = '') {
 
             const sGroup = createGroup('📦', stacks, update, 1);
             const rGroup = createGroup('🧩', remainder, update, yieldVal);
-            
+
             calcWrapper.append(sGroup.g, rGroup.g, totalDisp);
             row.append(itemInfo, calcWrapper);
             inner.appendChild(row);
         });
 
-        const content = el('div', `items-list-content ${isOpen?'':'collapsed'}`, '', {id: catId});
+        const content = el('div', `items-list-content ${isOpen ? '' : 'collapsed'}`, '', { id: catId });
         content.appendChild(inner); group.append(content); dom.inventoryContainer.appendChild(group);
     });
 }
@@ -405,9 +432,9 @@ function renderRecipeBreakdown(sel, ldt) {
         Object.entries(source).sort().forEach(([k, q]) => {
             if (q <= 0) return; const item = parseKey(k);
             const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">${label}</span>`;
-            const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier>1?ROMANS[item.tier]:''} ${badge} (x${q})</div></h4>`);
-            if (isCraftable(item.name)) { 
-                const tree = renderTree(item.name, q, false, true, item.tier); if (tree) li.appendChild(tree); 
+            const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier > 1 ? ROMANS[item.tier] : ''} ${badge} (x${q})</div></h4>`);
+            if (isCraftable(item.name)) {
+                const tree = renderTree(item.name, q, false, true, item.tier); if (tree) li.appendChild(tree);
             }
             list.appendChild(li);
         });
@@ -419,7 +446,7 @@ function renderRecipeBreakdown(sel, ldt) {
 function exportToCSV() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     const combinedData = (tab === 'craft-goals') ? lastGoalsNeed : (tab === 'loadouts' ? lastLdtNeed : { ...lastGoalsNeed, ...lastLdtNeed });
-    
+
     let csv = "Resource Name,Total Needed\n";
     csv += "--- BASE RESOURCES ---\n";
     Object.entries(combinedData).filter(([n]) => !isCraftable(n)).sort().forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
@@ -433,7 +460,7 @@ function exportToCSV() {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a'); a.style.display = 'none'; a.href = url;
-    a.download = `arc_raiders_resources_${new Date().toISOString().slice(0,10)}.csv`;
+    a.download = `arc_raiders_resources_${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a); a.click();
     window.URL.revokeObjectURL(url); document.body.removeChild(a);
 }
@@ -454,14 +481,14 @@ function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
         const badge = tLabel ? `<span style="font-size:0.6rem; color:var(--color-highlight-yellow); border:1px solid; padding:0 3px; margin-right:5px; vertical-align:middle;">${tLabel}</span>` : '';
         const batchInfo = (yieldVal > 1 && isRoot) ? ` <small style="color:var(--color-text-dim); font-size:0.7rem;">(Batch: x${yieldVal})</small>` : '';
 
-        const toggle = el('div', `craft-item-toggle ${isC?'craftable':'base-resource'}`, 
-            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC?'▶':''}</span>${getIconHtml(ing)} <span class="item-name-display">${badge}${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
-            isC ? {'data-target': tid} : {});
-            
+        const toggle = el('div', `craft-item-toggle ${isC ? 'craftable' : 'base-resource'}`,
+            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC ? '▶' : ''}</span>${getIconHtml(ing)} <span class="item-name-display">${badge}${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
+            isC ? { 'data-target': tid } : {});
+
         li.appendChild(toggle);
-        if (isC) { 
-            const sub = renderTree(ing, total, true, false, 1); 
-            if (sub) { sub.id = tid; li.appendChild(sub); } 
+        if (isC) {
+            const sub = renderTree(ing, total, true, false, 1);
+            if (sub) { sub.id = tid; li.appendChild(sub); }
         }
         inner.appendChild(li);
     };
@@ -484,7 +511,7 @@ const getScrapDbKey = (name, tier) => {
     if (tier === 1) return name;
     const suffixes = { 2: ' ii', 3: ' iii', 4: ' iV' };
     const key = name + (suffixes[tier] || '');
-    return RECYCLE_DB[key] ? key : name; 
+    return RECYCLE_DB[key] ? key : name;
 };
 
 const getBaseName = (name) => name.replace(/ (ii|iii|iV)$/i, '');
@@ -511,7 +538,7 @@ function renderSmartSuggestions() {
         const { name, tier } = parseKey(invKey);
         const dbKey = getScrapDbKey(name, tier);
         const scrapData = RECYCLE_DB[dbKey];
-        
+
         if (scrapData) {
             let helpsWith = [];
             Object.entries(scrapData).forEach(([yieldItem, yieldQty]) => {
@@ -552,12 +579,12 @@ function renderScrapperUI() {
         if (invQty <= 0) return;
         const { name, tier } = parseKey(invKey);
         const dbKey = getScrapDbKey(name, tier);
-        
+
         if (RECYCLE_DB[dbKey]) {
             hasItems = true;
             const currentScrapQty = scrapSelection[invKey] || 0;
             const row = el('div', `scrapper-item-row ${currentScrapQty > 0 ? 'selected' : ''}`);
-            
+
             row.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 8px;">
                     ${getIconHtml(getBaseName(name))}
@@ -567,17 +594,17 @@ function renderScrapperUI() {
                     <input type="number" class="scrap-qty-input" min="0" max="${invQty}" value="${currentScrapQty}" data-scraptarget="${invKey}">
                 </div>
             `;
-            
+
             const input = row.querySelector('.scrap-qty-input');
             input.addEventListener('input', (e) => {
                 let val = parseInt(e.target.value) || 0;
                 if (val < 0) val = 0;
                 if (val > invQty) val = invQty;
                 e.target.value = val;
-                
+
                 if (val > 0) scrapSelection[invKey] = val;
                 else delete scrapSelection[invKey];
-                
+
                 row.classList.toggle('selected', val > 0);
                 renderScrapperYield();
             });
@@ -589,7 +616,7 @@ function renderScrapperUI() {
     if (!hasItems) {
         list.innerHTML = `<div class="empty-state-small" style="padding: 20px 10px;">No scrappable items in inventory.</div>`;
     }
-    
+
     renderScrapperYield();
 }
 
@@ -607,7 +634,7 @@ function renderScrapperYield() {
             const { name, tier } = parseKey(invKey);
             const dbKey = getScrapDbKey(name, tier);
             const scrapData = RECYCLE_DB[dbKey];
-            
+
             if (scrapData) {
                 Object.entries(scrapData).forEach(([yItem, yQty]) => {
                     totalYield[yItem] = (totalYield[yItem] || 0) + (yQty * scrapQty);
@@ -632,15 +659,15 @@ function renderScrapperYield() {
 }
 function dismantleSelected() {
     let itemsScrapped = false;
-    
+
     Object.entries(scrapSelection).forEach(([invKey, scrapQty]) => {
         if (scrapQty > 0 && userInventory[invKey] >= scrapQty) {
             userInventory[invKey] -= scrapQty;
-            
+
             const { name, tier } = parseKey(invKey);
             const dbKey = getScrapDbKey(name, tier);
             const scrapData = RECYCLE_DB[dbKey];
-            
+
             if (scrapData) {
                 Object.entries(scrapData).forEach(([yItem, yQty]) => {
                     const earned = yQty * scrapQty;
@@ -652,10 +679,10 @@ function dismantleSelected() {
     });
 
     if (itemsScrapped) {
-        scrapSelection = {}; 
-        calculateTotal(); 
-        renderInventoryUI(document.getElementById('search-input')?.value || ''); 
-        
+        scrapSelection = {};
+        calculateTotal();
+        renderInventoryUI(document.getElementById('search-input')?.value || '');
+
         const btn = document.getElementById('dismantle-btn');
         const oldText = btn.innerText;
         btn.innerText = "SCRAPPED!";
@@ -676,18 +703,18 @@ function appendReverseScrap(materialName) {
 
     const safeIdName = materialName.replace(/[^a-zA-Z0-9]/g, '-');
     const groupId = `lookup-group-${safeIdName}`;
-    
+
     const existingGroup = document.getElementById(groupId);
     if (existingGroup) {
         existingGroup.classList.remove('flash-highlight');
-        void existingGroup.offsetWidth; 
+        void existingGroup.offsetWidth;
         existingGroup.classList.add('flash-highlight');
-        
+
         const recyclerTabBtn = document.querySelector('.out-tab-btn[data-tab="output-scrapper"]');
         if (recyclerTabBtn && !recyclerTabBtn.classList.contains('active')) {
             recyclerTabBtn.classList.add('tab-alert');
         }
-        return; 
+        return;
     }
 
     let donors = [];
@@ -697,13 +724,13 @@ function appendReverseScrap(materialName) {
         }
     });
 
-    if (donors.length === 0) return; 
+    if (donors.length === 0) return;
 
-    donors.sort((a,b) => b.yield - a.yield);
+    donors.sort((a, b) => b.yield - a.yield);
 
     const groupDiv = el('div', 'lookup-group');
     groupDiv.id = groupId;
-    
+
     let html = `
         <div class="lookup-header">
             ${getIconHtml(materialName)} <span>${materialName}</span>
@@ -712,7 +739,7 @@ function appendReverseScrap(materialName) {
     `;
 
     const renderCard = (d) => `
-        <div class="suggestion-card" style="margin:0;">
+        <div class="suggestion-card" style="margin:0; display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 ${getIconHtml(getBaseName(d.name))}
                 <div>
@@ -720,6 +747,14 @@ function appendReverseScrap(materialName) {
                     <span style="font-size: 0.75rem; color: var(--color-text-dim);">Yields: <span style="color: var(--color-enough);">+${d.yield}</span></span>
                 </div>
             </div>
+            <button class="quick-add-btn" onclick="
+                const k = getKey('${getBaseName(d.name)}', 1);
+                userInventory[k] = (userInventory[k] || 0) + 1;
+                calculateTotal();
+                renderInventoryUI(document.getElementById('search-input')?.value || '');
+                this.classList.add('pulse-anim');
+                setTimeout(() => this.classList.remove('pulse-anim'), 300);
+            " title="Quick add +1 to inventory">+1</button>
         </div>
     `;
 
@@ -731,14 +766,14 @@ function appendReverseScrap(materialName) {
     if (donors.length > 4) {
         const remainingDonors = donors.slice(4);
         const hiddenId = `hidden-${groupId}`;
-        
+
         html += `
             <div id="${hiddenId}" class="lookup-hidden-items">
                 <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px;">
         `;
         remainingDonors.forEach(d => { html += renderCard(d); });
         html += `</div></div>`;
-        
+
         html += `
             <button class="lookup-show-more-btn" onclick="
                 const hiddenBlock = document.getElementById('${hiddenId}');
@@ -749,7 +784,7 @@ function appendReverseScrap(materialName) {
     }
 
     groupDiv.innerHTML = html;
-    
+
     list.insertBefore(groupDiv, list.firstChild);
     container.style.display = 'block';
 
@@ -762,53 +797,53 @@ function appendReverseScrap(materialName) {
 // --- LOADOUT UI ---
 
 const getGearStats = (name) => {
-    if (typeof GEAR_STATS === 'undefined') return {bp:15, safe:1, quick:4, util:0};
+    if (typeof GEAR_STATS === 'undefined') return { bp: 15, safe: 1, quick: 4, util: 0 };
     if (GEAR_STATS[name]) return GEAR_STATS[name];
-    
+
     const romanName = name.replace(/ 1$/, ' I').replace(/ 2$/, ' II').replace(/ 3.*$/, ' III');
     if (GEAR_STATS[romanName]) return GEAR_STATS[romanName];
-    
-    const searchName = name.toLowerCase().split(' (')[0]; 
+
+    const searchName = name.toLowerCase().split(' (')[0];
     const matchedKey = Object.keys(GEAR_STATS).find(k => k.toLowerCase().includes(searchName));
-    return matchedKey ? GEAR_STATS[matchedKey] : {bp:15, safe:1, quick:4, util:0};
+    return matchedKey ? GEAR_STATS[matchedKey] : { bp: 15, safe: 1, quick: 4, util: 0 };
 };
 
 function renderLoadoutUI() {
-    const s = currentLoadout.gear ? getGearStats(currentLoadout.gear.name) : {bp:15,safe:1,quick:4,util:0};
+    const s = currentLoadout.gear ? getGearStats(currentLoadout.gear.name) : { bp: 15, safe: 1, quick: 4, util: 0 };
     ['gear', 'shield', 'primary', 'secondary'].forEach(id => renderSlot(id));
-    
+
     const cfg = [
-        {id:'backpack-grid', n:s.bp, p:'bp', f:'all', l:''}, 
-        {id:'quick-use-grid', n:s.quick, p:'quick', f:'quick', l:'Quick'}, 
-        {id:'dynamic-utility-container', n:s.util, p:'util', f:'Utility', l:'Util'}, 
-        {id:'secure-pocket-grid', n:s.safe, p:'safe', f:'safe', l:'🔒'}
+        { id: 'backpack-grid', n: s.bp, p: 'bp', f: 'all', l: '' },
+        { id: 'quick-use-grid', n: s.quick, p: 'quick', f: 'quick', l: 'Quick' },
+        { id: 'dynamic-utility-container', n: s.util, p: 'util', f: 'Utility', l: 'Util' },
+        { id: 'secure-pocket-grid', n: s.safe, p: 'safe', f: 'safe', l: '🔒' }
     ];
 
     cfg.forEach(c => {
         const cnt = document.getElementById(c.id); if (!cnt) return; cnt.innerHTML = '';
-        for (let i=1; i<=c.n; i++) {
-            const slotId = `${c.p}${i}`, div = el('div', 'loadout-slot', '', {'data-slot': slotId, 'data-filter': c.f, 'data-label': c.l});
+        for (let i = 1; i <= c.n; i++) {
+            const slotId = `${c.p}${i}`, div = el('div', 'loadout-slot', '', { 'data-slot': slotId, 'data-filter': c.f, 'data-label': c.l });
             cnt.appendChild(div); renderSlot(slotId, div);
         }
     });
-    
+
     if (dom.backpackLabel) dom.backpackLabel.innerText = `BACKPACK (${s.bp})`;
     renderSavedLoadouts();
 }
 
 function renderSlot(id, node = null) {
     const slot = node || document.querySelector(`.loadout-slot[data-slot="${id}"]`); if (!slot) return;
-    const data = currentLoadout[id], map = {gear:'Amplifier', shield:'Shield', primary:'Primary', secondary:'Secondary'};
+    const data = currentLoadout[id], map = { gear: 'Amplifier', shield: 'Shield', primary: 'Primary', secondary: 'Secondary' };
     const label = slot.dataset.label || map[id] || '';
-    
+
     if (data) {
         const tierHtml = data.tier > 1 ? `<span style="position: absolute; top: 2px; left: 4px; color: var(--color-neon-blue); font-size: 0.75rem; font-family: 'Orbitron', sans-serif; font-weight: bold; text-shadow: 0 0 5px var(--color-neon-blue); z-index: 10;">${ROMANS[data.tier]}</span>` : '';
         const qtyHtml = data.qty > 1 ? `<span class="slot-qty">${data.qty}</span>` : '';
-        
+
         slot.innerHTML = `
             <div class="slot-content">
                 ${tierHtml}
-                ${getIconHtml(getBaseName(data.name)).replace('item-icon','slot-icon')} 
+                ${getIconHtml(getBaseName(data.name)).replace('item-icon', 'slot-icon')} 
                 ${qtyHtml}
             </div>
             <div class="remove-slot-item" data-action="clear-slot" data-slot="${id}">×</div>
@@ -816,24 +851,24 @@ function renderSlot(id, node = null) {
     } else {
         slot.innerHTML = `<div class="slot-placeholder">${label}</div>`;
     }
-    
-    slot.className = `loadout-slot ${data?'filled':''}`;
+
+    slot.className = `loadout-slot ${data ? 'filled' : ''}`;
     slot.onclick = (e) => { if (!e.target.dataset.action) openModal(id, slot.dataset.filter); };
 }
 
 function renderSavedLoadouts() {
-    if(!dom.savedLoadoutsList) return; dom.savedLoadoutsList.innerHTML = '';
+    if (!dom.savedLoadoutsList) return; dom.savedLoadoutsList.innerHTML = '';
     const keys = Object.keys(savedLoadouts).sort();
-    
+
     if (keys.length === 0) {
         dom.savedLoadoutsList.innerHTML = '<div class="empty-state-small">No saved loadouts yet.</div>';
         return;
     }
 
     keys.forEach(name => {
-        const chip = el('div', `saved-loadout-chip ${name === editingName ? 'selected' : ''}`, 
+        const chip = el('div', `saved-loadout-chip ${name === editingName ? 'selected' : ''}`,
             `<span class="saved-loadout-name">${name}</span><button class="delete-saved-btn" data-action="del-save" data-name="${name}">×</button>`);
-        chip.onclick = (e) => { if(e.target.dataset.action !== 'del-save') loadPreset(name); };
+        chip.onclick = (e) => { if (e.target.dataset.action !== 'del-save') loadPreset(name); };
         dom.savedLoadoutsList.appendChild(chip);
     });
 }
@@ -843,11 +878,11 @@ function loadPreset(name) {
     const data = JSON.parse(JSON.stringify(savedLoadouts[name]));
     dom.loadoutNameInput.value = name;
     dom.loadoutMultiplier.value = data._mult || 1;
-    
+
     for (let key in currentLoadout) delete currentLoadout[key];
-    Object.entries(data).forEach(([k, v]) => { if(k !== '_mult') currentLoadout[k] = v; });
-    
-    editingName = name; 
+    Object.entries(data).forEach(([k, v]) => { if (k !== '_mult') currentLoadout[k] = v; });
+
+    editingName = name;
     renderLoadoutUI();
 }
 
@@ -855,56 +890,56 @@ function openModal(slotId, filter) {
     activeSlotId = slotId;
     const modal = document.getElementById('item-selector-modal'), list = document.getElementById('modal-items-list');
     const search = document.getElementById('modal-search');
-    
+
     modal.classList.remove('hidden'); list.innerHTML = ''; search.value = '';
 
     const grouped = {};
     Object.entries(ALL_ITEMS_FLAT).forEach(([name, d]) => {
         const cat = d.category;
-        let v = (filter === 'all') || (cat === filter) || 
-                (filter === 'quick' && ['Utility','Medical','Grenades / Explosives'].includes(cat)) || 
-                (filter === 'safe' && cat !== 'Weapons' && cat !== 'Shields');
-        
+        let v = (filter === 'all') || (cat === filter) ||
+            (filter === 'quick' && ['Utility', 'Medical', 'Grenades / Explosives'].includes(cat)) ||
+            (filter === 'safe' && cat !== 'Weapons' && cat !== 'Shields');
+
         if (v) { if (!grouped[cat]) grouped[cat] = []; grouped[cat].push(name); }
     });
 
     Object.keys(grouped).sort().forEach(cat => {
         const groupWrap = el('div', 'modal-category-group');
-        const h = el('div', 'modal-category-title collapsed', `<span>${CATEGORY_EMOJIS[cat]||'📦'} ${cat}</span><span class="toggle-icon">▶</span>`);
+        const h = el('div', 'modal-category-title collapsed', `<span>${CATEGORY_EMOJIS[cat] || '📦'} ${cat}</span><span class="toggle-icon">▶</span>`);
         const content = el('div', 'modal-category-content collapsed');
-        
-        h.onclick = () => { 
-            const isCl = content.classList.toggle('collapsed'); 
-            h.classList.toggle('collapsed', isCl); 
+
+        h.onclick = () => {
+            const isCl = content.classList.toggle('collapsed');
+            h.classList.toggle('collapsed', isCl);
         };
 
         grouped[cat].sort().forEach(name => {
             const row = el('div', 'modal-item-row', `<div class="modal-item-info">${getIconHtml(name)} <span>${name}</span></div>`);
-            
+
             if (cat === 'Weapons') {
                 const pips = el('div', 'tier-pips');
                 for (let i = 1; i <= 4; i++) {
                     const pip = el('div', 'tier-pip');
-                    pip.onclick = (e) => { 
-                        e.stopPropagation(); 
-                        currentLoadout[activeSlotId] = {name, qty:1, tier:i}; 
-                        modal.classList.add('hidden'); 
-                        renderLoadoutUI(); 
+                    pip.onclick = (e) => {
+                        e.stopPropagation();
+                        currentLoadout[activeSlotId] = { name, qty: 1, tier: i };
+                        modal.classList.add('hidden');
+                        renderLoadoutUI();
                     };
                     pips.appendChild(pip);
                 }
                 row.appendChild(pips);
             }
-            
-            row.addEventListener('click', () => { 
-                currentLoadout[activeSlotId] = {name, qty:1, tier:1}; 
-                modal.classList.add('hidden'); 
-                renderLoadoutUI(); 
+
+            row.addEventListener('click', () => {
+                currentLoadout[activeSlotId] = { name, qty: 1, tier: 1 };
+                modal.classList.add('hidden');
+                renderLoadoutUI();
             });
             content.appendChild(row);
         });
-        
-        groupWrap.append(h, content); 
+
+        groupWrap.append(h, content);
         list.appendChild(groupWrap);
     });
 
@@ -921,7 +956,7 @@ function openModal(slotId, filter) {
             if (term) group.querySelector('.modal-category-content').classList.remove('collapsed');
         });
     };
-    
+
     document.getElementById('close-modal-btn').onclick = () => modal.classList.add('hidden');
 }
 
@@ -929,7 +964,7 @@ function openModal(slotId, filter) {
 function initEvents() {
     document.addEventListener('click', e => {
         const t = e.target.closest('[data-action], .accordion-title, .craft-item-toggle'); if (!t) return;
-        
+
         if (t.classList.contains('accordion-title') || t.classList.contains('craft-item-toggle')) {
             const target = document.getElementById(t.dataset.target);
             if (target) {
@@ -942,12 +977,12 @@ function initEvents() {
         }
 
         const act = t.dataset.action, it = t.dataset.item, tr = t.dataset.tier;
-        
+
         if (act === 'inc' || act === 'dec') {
             const k = getKey(it, tr), step = getYield(it);
-            userSelection[k] = Math.max(0, (userSelection[k]||0) + (act === 'inc' ? step : -step));
+            userSelection[k] = Math.max(0, (userSelection[k] || 0) + (act === 'inc' ? step : -step));
             renderItemsUI(dom.searchInput.value);
-        } 
+        }
         else if (act === 'set-tier') { uiTiers[it] = parseInt(tr); renderItemsUI(dom.searchInput.value); }
         else if (act === 'clear-slot') { delete currentLoadout[t.dataset.slot]; renderLoadoutUI(); }
         else if (act === 'toggle-cat') {
@@ -964,9 +999,15 @@ function initEvents() {
 
     document.querySelectorAll('.tab-btn').forEach(b => b.onclick = () => {
         document.querySelectorAll('.tab-btn, .tab-content').forEach(x => x.classList.remove('active'));
-        b.classList.add('active'); 
+        b.classList.add('active');
         const target = document.getElementById(b.dataset.tab);
-        if (target) target.classList.add('active'); 
+        if (target) target.classList.add('active');
+
+        if (dom.searchInput) {
+            dom.searchInput.value = '';
+            renderItemsUI('');
+            renderInventoryUI('');
+        }
         calculateTotal();
     });
 
@@ -976,8 +1017,8 @@ function initEvents() {
             if (x.classList.contains('out-tab-content')) x.style.display = 'none';
         });
         b.classList.add('active');
-        b.classList.remove('tab-alert'); 
-        
+        b.classList.remove('tab-alert');
+
         const content = document.getElementById(b.dataset.tab);
         if (content) {
             content.classList.add('active');
@@ -999,10 +1040,11 @@ function initEvents() {
 
     if (dom.filterHideEmpty) dom.filterHideEmpty.onclick = () => { dom.filterHideEmpty.classList.toggle('active'); renderInventoryUI(dom.searchInput.value); };
     if (dom.filterShowRequired) dom.filterShowRequired.onclick = () => { dom.filterShowRequired.classList.toggle('active'); renderInventoryUI(dom.searchInput.value); };
-    
+    if (dom.filterShowRecycle) dom.filterShowRecycle.onclick = () => { dom.filterShowRecycle.classList.toggle('active'); renderInventoryUI(dom.searchInput.value); };
+
     if (dom.resetInventoryBtn) {
         dom.resetInventoryBtn.onclick = () => {
-            if(confirm("Clear inventory ONLY?")) {
+            if (confirm("Clear inventory ONLY?")) {
                 for (let k in userInventory) delete userInventory[k];
                 renderInventoryUI(); calculateTotal();
             }
@@ -1012,18 +1054,18 @@ function initEvents() {
     if (dom.dismantleBtn) dom.dismantleBtn.onclick = dismantleSelected;
 
     dom.resetButton.onclick = () => {
-        if(confirm("Clear all Crafting Goals and current Loadout? (Your Inventory and Saved Presets will remain safe)")) {
+        if (confirm("Clear all Crafting Goals and current Loadout? (Your Inventory and Saved Presets will remain safe)")) {
             for (let k in userSelection) delete userSelection[k];
             for (let k in currentLoadout) delete currentLoadout[k];
             editingName = null;
-            if(dom.loadoutNameInput) dom.loadoutNameInput.value = '';
-            if(dom.loadoutMultiplier) dom.loadoutMultiplier.value = 1;
+            if (dom.loadoutNameInput) dom.loadoutNameInput.value = '';
+            if (dom.loadoutMultiplier) dom.loadoutMultiplier.value = 1;
 
             uiTiers = {};
             openCats.clear();
             openTreeNodes.clear();
             scrapSelection = {};
-            
+
             renderItemsUI();
             renderLoadoutUI();
             calculateTotal();
@@ -1033,9 +1075,9 @@ function initEvents() {
         }
     };
 
-    dom.searchInput.oninput = (e) => { 
-        renderItemsUI(e.target.value); 
-        renderInventoryUI(e.target.value); 
+    dom.searchInput.oninput = (e) => {
+        renderItemsUI(e.target.value);
+        renderInventoryUI(e.target.value);
     };
 
     // ФИКС QTY LOADOUTS: Оживили кнопки + и - для множителя лодаута
@@ -1061,7 +1103,7 @@ function initEvents() {
 
                 renderLoadoutUI();
                 calculateTotal();
-                
+
                 const oldText = dom.saveLoadoutBtn.innerText;
                 dom.saveLoadoutBtn.innerText = "SAVED & CLEARED!";
                 dom.saveLoadoutBtn.style.borderColor = "var(--color-enough)";
@@ -1078,9 +1120,9 @@ function initEvents() {
     }
 
     if (dom.clearLoadoutBtn) {
-        dom.clearLoadoutBtn.onclick = () => { 
-            editingName = null; dom.loadoutNameInput.value = ''; dom.loadoutMultiplier.value = 1; 
-            for (let key in currentLoadout) delete currentLoadout[key]; renderLoadoutUI(); 
+        dom.clearLoadoutBtn.onclick = () => {
+            editingName = null; dom.loadoutNameInput.value = ''; dom.loadoutMultiplier.value = 1;
+            for (let key in currentLoadout) delete currentLoadout[key]; renderLoadoutUI();
         };
     }
 }
@@ -1089,7 +1131,7 @@ function initEvents() {
 function renderItemsUI(f = '') {
     if (!dom.itemsContainer) return;
     dom.itemsContainer.innerHTML = '';
-    
+
     // ФИКС: Проверка поиска и приведение в нижний регистр
     const hasSearch = f.trim().length > 0;
     const searchTerm = f.toLowerCase();
@@ -1099,20 +1141,20 @@ function renderItemsUI(f = '') {
         const isCatMatch = cat.toLowerCase().includes(searchTerm);
         const filtered = Object.keys(map).filter(i => isCatMatch || i.toLowerCase().includes(searchTerm));
         if (!filtered.length) return;
-        
+
         const catId = `cat-${cat.replace(/\s/g, '-')}`;
         const isOpen = hasSearch || openCats.has(catId);
-        
+
         const group = el('div', 'category-group');
-        group.innerHTML = `<h3 class="category-title ${isOpen?'':'collapsed'}" data-action="toggle-cat" data-target="${catId}">
-            <span>${CATEGORY_EMOJIS[cat]||'💎'} ${cat}</span><span class="toggle-icon">${isOpen?'▼':'▶'}</span></h3>`;
+        group.innerHTML = `<h3 class="category-title ${isOpen ? '' : 'collapsed'}" data-action="toggle-cat" data-target="${catId}">
+            <span>${CATEGORY_EMOJIS[cat] || '💎'} ${cat}</span><span class="toggle-icon">${isOpen ? '▼' : '▶'}</span></h3>`;
         const inner = el('div', 'items-list-content-inner');
-        
+
         filtered.forEach(name => {
             const tier = uiTiers[name] || 1, qty = userSelection[getKey(name, tier)] || 0;
             const row = el('div', 'item-row');
-            let pips = WEAPON_UPGRADES?.[name] ? `<div class="tier-pips">${[1,2,3,4].map(t=>`<div class="tier-pip ${t<=tier?'active':''}" data-action="set-tier" data-item="${name}" data-tier="${t}"></div>`).join('')}</div>` : '';
-            
+            let pips = WEAPON_UPGRADES?.[name] ? `<div class="tier-pips">${[1, 2, 3, 4].map(t => `<div class="tier-pip ${t <= tier ? 'active' : ''}" data-action="set-tier" data-item="${name}" data-tier="${t}"></div>`).join('')}</div>` : '';
+
             // ФИКС: Кнопки вызывают onchange у input, чтобы данные точно улетели в базу
             row.innerHTML = `<div class="item-wrapper">${getIconHtml(name)}<div class="item-info-col"><span>${name}</span>${pips}</div></div>
                 <div class="quantity-control">
@@ -1120,38 +1162,38 @@ function renderItemsUI(f = '') {
                     <input type="number" class="qty-input" value="${qty}" data-item="${name}" data-tier="${tier}">
                     <button class="qty-btn" onclick="let i=this.previousElementSibling; i.value=(parseInt(i.value)||0)+1; i.dispatchEvent(new Event('change'))">+</button>
                 </div>`;
-            
+
             const input = row.querySelector('.qty-input');
             input.onchange = (e) => {
                 const val = safeInt(e.target.value);
                 const k = getKey(name, tier);
                 userSelection[k] = val;
-                e.target.value = val; 
+                e.target.value = val;
             };
 
             inner.appendChild(row);
         });
-        const content = el('div', `items-list-content ${isOpen?'':'collapsed'}`, '', {id: catId});
+        const content = el('div', `items-list-content ${isOpen ? '' : 'collapsed'}`, '', { id: catId });
         content.appendChild(inner); group.append(content); dom.itemsContainer.appendChild(group);
     });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const ids = [
-        'base-total-list', 'items-container', 'inventory-container', 'search-input', 'reset-button', 
-        'loadout-multiplier', 'loadout-dec', 'loadout-inc', 'backpack-label', 'save-loadout-btn', 
+        'base-total-list', 'items-container', 'inventory-container', 'search-input', 'reset-button',
+        'loadout-multiplier', 'loadout-dec', 'loadout-inc', 'backpack-label', 'save-loadout-btn',
         'loadout-name-input', 'saved-loadouts-list', 'total-net-worth', 'clear-loadout-btn',
-        'filter-hide-empty', 'filter-show-required', 'reset-inventory-btn', 'dismantle-btn',
+        'filter-hide-empty', 'filter-show-required', 'filter-show-recycle', 'reset-inventory-btn', 'dismantle-btn',
         'smart-suggestions-list', 'scrapper-inventory-list', 'scrapper-yield-list'
     ];
-    
+
     ids.forEach(id => {
         dom[id.replace(/-([a-z])/g, g => g[1].toUpperCase())] = document.getElementById(id);
     });
 
     if (typeof initializeData === 'function') initializeData();
     initEvents();
-    
+
     renderItemsUI();
     renderInventoryUI();
     renderLoadoutUI();
