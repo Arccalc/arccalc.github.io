@@ -135,6 +135,7 @@
                         <button id="filter-show-required" class="inv-filter-btn" title="Needed for Craft">🛠️</button>
                         <button id="filter-show-recycle" class="inv-filter-btn" title="Scrap for Mats">♻️</button>
                     </div>
+                    
                     <div id="inventory-container"></div>
                 </div>
             </div>
@@ -158,6 +159,9 @@
                 <div id="output-totals" class="out-tab-content active">
                     <h2 class="panel-title total-header"
                         style="border: none; margin: 0; padding: 0; margin-bottom: 10px;">Total Base Resources</h2>
+                        
+                    <div class="interaction-tip">💡 Tip: Click on any resource below to see what items you can scrap to get it</div>
+                    
                     <ul id="base-total-list">
                         <div class="empty-state">Select items...</div>
                     </ul>
@@ -240,6 +244,7 @@
                             </button>
                         </div>
                         <div id="reverse-lookup-list" style="display: flex; flex-direction: column; gap: 8px;">
+                            <div class="empty-state-text" id="lookup-empty-state">Select a resource from your Needs or Inventory to see which items can be dismantled into it.</div>
                         </div>
                     </div>
                 </div>

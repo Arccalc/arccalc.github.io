@@ -1,6 +1,7 @@
 /**
  * ARC Raiders // Advanced Resource Calculator
  * FINAL VERSION: Standalone Tier Pricing, Inventory Steps, UI Sync, SCRAPPER & REVERSE LOOKUP
+ * UPDATE: Integrated Serial Picker for Backpack & Quick slots
  */
 
 const STATE_KEYS = {
@@ -194,7 +195,6 @@ function calculateTotal() {
     if (typeof renderSmartSuggestions === 'function') renderSmartSuggestions();
     if (typeof renderScrapperUI === 'function') renderScrapperUI();
 }
-
 function renderOutput(goalsNeed, ldtNeed, have) {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     if (!dom.baseTotalList) return;
@@ -274,9 +274,19 @@ function renderIngredients(sel, ldt, have) {
         Object.entries(data).sort().forEach(([n, q]) => {
             const h = have[n] || 0;
             const need = Math.max(0, q - h);
-            list.appendChild(el('li', '', `<div class="item-wrapper">${getIconHtml(n)} <b>${n}</b></div>
-                <span style="text-align:right"><span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
-                <span class="base-total-label">Need: ${q} (Have: ${h})</span></span>`));
+            
+            // --- ВОТ ЗДЕСЬ ИЗМЕНЕНИЯ ДЛЯ КЛИКАБЕЛЬНОСТИ ---
+            const li = el('li', 'clickable-resource', `
+                <div class="item-wrapper">${getIconHtml(n)} <b>${n}</b></div>
+                <span style="text-align:right">
+                    <span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
+                    <span class="base-total-label">Need: ${q} (Have: ${h})</span>
+                </span>
+            `, { title: "Click to find scrap sources" });
+            
+            li.onclick = () => appendReverseScrap(n);
+            list.appendChild(li);
+            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
         });
     };
 
@@ -314,9 +324,7 @@ function renderInventoryUI(f = '') {
 
     Object.keys(ALL_ITEMS_FLAT).forEach(res => {
         const cat = ALL_ITEMS_FLAT[res].category || 'Misc';
-        // ФИКС ПОИСКА ПО КАТЕГОРИИ: теперь ищем и в имени предмета, и в имени категории
         if (res.toLowerCase().includes(searchTerm) || cat.toLowerCase().includes(searchTerm)) {
-
             const isDirect = checkDirectlyNeeded(res);
             const isRecycle = checkIsRecycleSource(res);
 
@@ -335,13 +343,21 @@ function renderInventoryUI(f = '') {
     });
 
     Object.keys(groupedResources).sort().forEach(cat => {
-        const catId = `inv-cat-${cat.replace(/\s/g, '-')}`;
+        const catId = `inv-cat-${cat.replace(/\s+/g, '-')}`;
         const isOpen = hasSearch || openCats.has(catId);
 
         const group = el('div', 'category-group');
         group.innerHTML = `<h3 class="category-title ${isOpen ? '' : 'collapsed'}" data-action="toggle-cat" data-target="${catId}">
             <span>${CATEGORY_EMOJIS[cat] || '📦'} ${cat}</span><span class="toggle-icon">${isOpen ? '▼' : '▶'}</span></h3>`;
+        
         const inner = el('div', 'items-list-content-inner');
+
+        // ПРОВЕРКА КАТЕГОРИИ "Material"
+        if (cat === 'Material') {
+            const tip = el('div', 'interaction-tip2', '💡 Tip: Click on any material below to see what items you can scrap to get it');
+            tip.style.margin = '5px 4px 15px 4px'; 
+            inner.appendChild(tip);
+        }
 
         groupedResources[cat].sort().forEach(res => {
             const isDirect = checkDirectlyNeeded(res);
@@ -366,7 +382,14 @@ function renderInventoryUI(f = '') {
                 ).join('')}</div>`;
             }
 
-            const itemInfo = el('div', `item-wrapper ${isAnyNeeded ? 'highlight-needed' : ''}`, `
+            let hasScrapSources = false;
+            if (typeof RECYCLE_DB !== 'undefined') {
+                hasScrapSources = Object.values(RECYCLE_DB).some(yields => yields[res]);
+            }
+
+            const clickClass = hasScrapSources ? 'clickable-resource' : '';
+
+            const itemInfo = el('div', `item-wrapper ${clickClass} ${isAnyNeeded ? 'highlight-needed' : ''}`, `
                 ${getIconHtml(res)} 
                 <div class="inv-item-info">
                     <span>${res} ${tier > 1 ? ROMANS[tier] : ''}</span>
@@ -374,6 +397,14 @@ function renderInventoryUI(f = '') {
                     ${pipsHtml}
                 </div>
             `);
+
+            if (hasScrapSources) {
+                itemInfo.onclick = (e) => {
+                    if (!e.target.classList.contains('tier-pip')) {
+                        appendReverseScrap(res);
+                    }
+                };
+            }
 
             const calcWrapper = el('div', 'inventory-calc-wrapper');
 
@@ -421,10 +452,9 @@ function renderInventoryUI(f = '') {
         });
 
         const content = el('div', `items-list-content ${isOpen ? '' : 'collapsed'}`, '', { id: catId });
-        content.appendChild(inner); group.append(content); dom.inventoryContainer.appendChild(group);
+        content.appendChild(inner); group.appendChild(content); dom.inventoryContainer.appendChild(group);
     });
 }
-
 function renderRecipeBreakdown(sel, ldt) {
     const list = document.getElementById('recipe-breakdown-list'); if (!list) return; list.innerHTML = '';
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
@@ -502,7 +532,6 @@ function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
     }
     ul.appendChild(inner); return ul;
 }
-
 // ==========================================
 // --- NEW SCRAPPER / RECYCLER LOGIC ---
 // ==========================================
@@ -701,6 +730,11 @@ function appendReverseScrap(materialName) {
     const list = document.getElementById('reverse-lookup-list');
     if (!container || !list || typeof RECYCLE_DB === 'undefined') return;
 
+    // --- НОВОЕ: Убираем пустой текст-подсказку при первом клике ---
+    const emptyState = document.getElementById('lookup-empty-state');
+    if (emptyState) emptyState.remove();
+
+
     const safeIdName = materialName.replace(/[^a-zA-Z0-9]/g, '-');
     const groupId = `lookup-group-${safeIdName}`;
 
@@ -836,6 +870,9 @@ function renderSlot(id, node = null) {
     const data = currentLoadout[id], map = { gear: 'Amplifier', shield: 'Shield', primary: 'Primary', secondary: 'Secondary' };
     const label = slot.dataset.label || map[id] || '';
 
+    // ДОБАВЛЕНО: Класс активного редактируемого слота
+    const isActive = (id === activeSlotId);
+
     if (data) {
         const tierHtml = data.tier > 1 ? `<span style="position: absolute; top: 2px; left: 4px; color: var(--color-neon-blue); font-size: 0.75rem; font-family: 'Orbitron', sans-serif; font-weight: bold; text-shadow: 0 0 5px var(--color-neon-blue); z-index: 10;">${ROMANS[data.tier]}</span>` : '';
         const qtyHtml = data.qty > 1 ? `<span class="slot-qty">${data.qty}</span>` : '';
@@ -852,7 +889,7 @@ function renderSlot(id, node = null) {
         slot.innerHTML = `<div class="slot-placeholder">${label}</div>`;
     }
 
-    slot.className = `loadout-slot ${data ? 'filled' : ''}`;
+    slot.className = `loadout-slot ${data ? 'filled' : ''} ${isActive ? 'active-editing-slot' : ''}`;
     slot.onclick = (e) => { if (!e.target.dataset.action) openModal(id, slot.dataset.filter); };
 }
 
@@ -886,12 +923,18 @@ function loadPreset(name) {
     renderLoadoutUI();
 }
 
+// --- УЛУЧШЕННАЯ МОДАЛКА (SERIAL PICKER) ---
 function openModal(slotId, filter) {
     activeSlotId = slotId;
+    renderLoadoutUI(); // Подсвечиваем активный слот
+
     const modal = document.getElementById('item-selector-modal'), list = document.getElementById('modal-items-list');
     const search = document.getElementById('modal-search');
 
     modal.classList.remove('hidden'); list.innerHTML = ''; search.value = '';
+
+    // Закрытие по клику вне контента
+    modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
     const grouped = {};
     Object.entries(ALL_ITEMS_FLAT).forEach(([name, d]) => {
@@ -916,26 +959,40 @@ function openModal(slotId, filter) {
         grouped[cat].sort().forEach(name => {
             const row = el('div', 'modal-item-row', `<div class="modal-item-info">${getIconHtml(name)} <span>${name}</span></div>`);
 
+            // Функция выбора предмета
+            const selectItem = (tier = 1) => {
+                currentLoadout[activeSlotId] = { name, qty: 1, tier: tier };
+                
+                // SERIAL MODE: Для Backpack и Quick слотов ищем следующий пустой слот
+                const isSerial = activeSlotId.startsWith('bp') || activeSlotId.startsWith('quick');
+                if (isSerial) {
+                    const prefix = activeSlotId.match(/[a-zA-Z]+/)[0];
+                    const slots = Array.from(document.querySelectorAll(`.loadout-slot[data-slot^="${prefix}"]`));
+                    const currentIndex = slots.findIndex(s => s.dataset.slot === activeSlotId);
+                    const nextSlot = slots[currentIndex + 1];
+
+                    if (nextSlot) {
+                        activeSlotId = nextSlot.dataset.slot;
+                        renderLoadoutUI(); // Сдвигаем подсветку
+                    } else {
+                        closeModal();
+                    }
+                } else {
+                    closeModal();
+                }
+            };
+
             if (cat === 'Weapons') {
                 const pips = el('div', 'tier-pips');
                 for (let i = 1; i <= 4; i++) {
                     const pip = el('div', 'tier-pip');
-                    pip.onclick = (e) => {
-                        e.stopPropagation();
-                        currentLoadout[activeSlotId] = { name, qty: 1, tier: i };
-                        modal.classList.add('hidden');
-                        renderLoadoutUI();
-                    };
+                    pip.onclick = (e) => { e.stopPropagation(); selectItem(i); };
                     pips.appendChild(pip);
                 }
                 row.appendChild(pips);
             }
 
-            row.addEventListener('click', () => {
-                currentLoadout[activeSlotId] = { name, qty: 1, tier: 1 };
-                modal.classList.add('hidden');
-                renderLoadoutUI();
-            });
+            row.addEventListener('click', () => selectItem(1));
             content.appendChild(row);
         });
 
@@ -957,7 +1014,13 @@ function openModal(slotId, filter) {
         });
     };
 
-    document.getElementById('close-modal-btn').onclick = () => modal.classList.add('hidden');
+    document.getElementById('close-modal-btn').onclick = closeModal;
+}
+
+function closeModal() {
+    document.getElementById('item-selector-modal').classList.add('hidden');
+    activeSlotId = null;
+    renderLoadoutUI();
 }
 
 // --- GLOBAL EVENTS ---
@@ -1142,7 +1205,7 @@ function renderItemsUI(f = '') {
         const filtered = Object.keys(map).filter(i => isCatMatch || i.toLowerCase().includes(searchTerm));
         if (!filtered.length) return;
 
-        const catId = `cat-${cat.replace(/\s/g, '-')}`;
+        const catId = `cat-${cat.replace(/\s+/g, '-')}`;
         const isOpen = hasSearch || openCats.has(catId);
 
         const group = el('div', 'category-group');
