@@ -1973,3 +1973,7 @@ h2.panel-title.total-header {
 .flash-update {
     animation: highlight-panel 0.5s ease-out;
 }
+
+#craft-total-list li {
+    display: block !important;
+}

@@ -1,7 +1,7 @@
 /**
  * ARC Raiders // Advanced Resource Calculator
  * FINAL VERSION: Standalone Tier Pricing, Inventory Steps, UI Sync, SCRAPPER & REVERSE LOOKUP
- * UPDATE: Integrated Serial Picker for Backpack & Quick slots
+ * UPDATE: Clean CSV Export (Resources for Goals, Direct Raw Materials, Total Raw Materials)
  */
 
 const STATE_KEYS = {
@@ -31,7 +31,6 @@ const el = (tag, cl = '', html = '', atk = {}) => {
     return n;
 };
 
-// Добавлено: Базовая функция валидации (Fix QA 1.4)
 const safeInt = (val) => {
     const n = parseInt(val);
     return isNaN(n) ? 0 : Math.max(0, n);
@@ -101,8 +100,8 @@ let savedLoadouts = storage.get(STATE_KEYS.SLDT);
 let editingName = null, activeSlotId = null, openCats = new Set();
 let uiTiers = {};
 let invTiers = {};
-let scrapSelection = {}; // Состояние для ручного распылителя
-let openTreeNodes = new Set(); // Для Fix QA 1.2
+let scrapSelection = {};
+let openTreeNodes = new Set();
 
 let lastGoalsNeed = {}, lastLdtNeed = {}, lastHave = {};
 let requiredBaseResources = new Set();
@@ -160,12 +159,7 @@ function calculateTotal() {
     Object.entries(userInventory).forEach(([k, q]) => {
         if (q > 0) {
             const { name, tier } = parseKey(k);
-
-            // ФИКС Ресайклера: Мы больше не используем breakdown() для инвентаря.
-            // Теперь система видит только сырые ресурсы, что заставляет Ресайклер 
-            // корректно предлагать распыление готовых предметов.
             totalHave[name] = (totalHave[name] || 0) + q;
-
             const y = getYield(name);
             const p = getPrice(name, tier);
             netWorth += (q / y) * p;
@@ -187,29 +181,81 @@ function calculateTotal() {
         dom.totalNetWorth.classList.add('update-pulse');
     }
 
-    renderOutput(goalsNeed, ldtNeed, totalHave);
+    renderOutput(selFlat, ldtFlat, totalHave);
     renderIngredients(selFlat, ldtFlat, totalHave);
     renderRecipeBreakdown(selFlat, ldtFlat);
 
-    // Обновляем данные скраппера при любых изменениях инвентаря или целей
     if (typeof renderSmartSuggestions === 'function') renderSmartSuggestions();
     if (typeof renderScrapperUI === 'function') renderScrapperUI();
 }
-function renderOutput(goalsNeed, ldtNeed, have) {
+
+function renderOutput(sel, ldt, have) {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     if (!dom.baseTotalList) return;
     dom.baseTotalList.innerHTML = '';
 
-    const draw = (data, title) => {
-        const baseData = Object.entries(data).filter(([n]) => BASE_RESOURCES.has(n)).sort();
-        if (!baseData.length) return;
+    const getDirect = (source) => {
+        const reqs = {};
+        Object.entries(source).forEach(([k, q]) => {
+            if (q <= 0) return;
+            const { name, tier } = parseKey(k);
+            
+            const r = getRecipe(name);
+            if (r) {
+                const yieldVal = getYield(name);
+                const cycles = Math.ceil(q / yieldVal);
+                Object.entries(r).forEach(([ing, iq]) => {
+                    reqs[ing] = (reqs[ing] || 0) + iq * cycles;
+                });
+            } else if (!isCraftable(name)) {
+                reqs[name] = (reqs[name] || 0) + q;
+            }
+            
+            if (tier > 1 && WEAPON_UPGRADES?.[name]) {
+                for (let t = 2; t <= tier; t++) {
+                    const upg = WEAPON_UPGRADES[name][t];
+                    if (upg) Object.entries(upg).forEach(([uI, uQ]) => {
+                        reqs[uI] = (reqs[uI] || 0) + uQ * q;
+                    });
+                }
+            }
+        });
+        return reqs;
+    };
+
+    const draw = (source, title) => {
+        const directReqs = getDirect(source);
+        const ingredients = Object.entries(directReqs).filter(([n]) => isCraftable(n)).sort();
+        const baseRes = Object.entries(directReqs).filter(([n]) => !isCraftable(n)).sort();
+        
+        if (!ingredients.length && !baseRes.length) return;
 
         dom.baseTotalList.appendChild(el('div', 'output-divider', title));
-        baseData.forEach(([n, q]) => {
+        
+        ingredients.forEach(([n, q]) => {
             const h = have[n] || 0;
             const need = Math.max(0, q - h);
 
-            // Строка с классом clickable-resource для вызова Reverse Lookup
+            const li = el('li', 'clickable-resource', `
+                <div class="item-wrapper">${getIconHtml(n)} <b>${n}</b></div>
+                <span style="text-align:right">
+                    <span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
+                    <span class="base-total-label">Need: ${need} (Have: ${h})</span>
+                </span>
+            `, { title: "Click to find scrap sources" });
+
+            li.onclick = () => appendReverseScrap(n);
+            dom.baseTotalList.appendChild(li);
+        });
+        
+        if (baseRes.length > 0 && ingredients.length > 0) {
+            dom.baseTotalList.appendChild(el('div', 'output-divider', 'DIRECT RAW MATERIALS'));
+        }
+        
+        baseRes.forEach(([n, q]) => {
+            const h = have[n] || 0;
+            const need = Math.max(0, q - h);
+
             const li = el('li', 'clickable-resource', `
                 <div class="item-wrapper">${getIconHtml(n)} ${n}</div>
                 <span style="text-align:right">
@@ -222,48 +268,44 @@ function renderOutput(goalsNeed, ldtNeed, have) {
         });
     };
 
-    if (tab === 'craft-goals') draw(goalsNeed, "RESOURCES FOR GOALS");
-    else if (tab === 'loadouts') draw(ldtNeed, "RESOURCES FOR LOADOUT");
+    if (tab === 'craft-goals') draw(sel, "RESOURCES FOR GOALS");
+    else if (tab === 'loadouts') draw(ldt, "RESOURCES FOR LOADOUT");
     else {
-        draw(goalsNeed, "CRAFTING GOALS TOTAL");
-        draw(ldtNeed, "LOADOUT TOTAL");
+        draw(sel, "CRAFTING GOALS TOTAL");
+        draw(ldt, "LOADOUT TOTAL");
     }
 }
+
 function renderIngredients(sel, ldt, have) {
     const list = document.getElementById('craft-total-list'); if (!list) return; list.innerHTML = '';
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
 
     const getInter = (source) => {
         let inter = {};
-        const collect = (n, q, t = 1) => {
-            const r = getRecipe(n);
+        Object.entries(source).forEach(([k, q]) => {
+            if (q <= 0) return;
+            
+            const { name, tier } = parseKey(k);
+            const r = getRecipe(name);
             if (r) {
-                const yieldVal = getYield(n);
+                const yieldVal = getYield(name);
                 const cycles = Math.ceil(q / yieldVal);
                 Object.entries(r).forEach(([ing, iq]) => {
                     if (isCraftable(ing)) {
-                        const total = iq * cycles;
-                        inter[ing] = (inter[ing] || 0) + total;
-                        collect(ing, total, 1);
+                        inter[ing] = (inter[ing] || 0) + iq * cycles;
                     }
                 });
             }
-            if (t > 1 && WEAPON_UPGRADES?.[n]) {
-                for (let i = 2; i <= t; i++) {
-                    const upg = WEAPON_UPGRADES[n][i];
+            if (tier > 1 && WEAPON_UPGRADES?.[name]) {
+                for (let i = 2; i <= tier; i++) {
+                    const upg = WEAPON_UPGRADES[name][i];
                     if (upg) Object.entries(upg).forEach(([uIng, uIq]) => {
                         if (isCraftable(uIng)) {
-                            const total = uIq * q;
-                            inter[uIng] = (inter[uIng] || 0) + total;
-                            collect(uIng, total, 1);
+                            inter[uIng] = (inter[uIng] || 0) + uIq * q;
                         }
                     });
                 }
             }
-        };
-        Object.entries(source).forEach(([k, q]) => {
-            const { name, tier } = parseKey(k);
-            collect(name, q, tier);
         });
         return inter;
     };
@@ -272,21 +314,35 @@ function renderIngredients(sel, ldt, have) {
         if (!Object.keys(data).length) return;
         list.appendChild(el('div', 'output-divider', title));
         Object.entries(data).sort().forEach(([n, q]) => {
+            if (q <= 0) return;
+            
             const h = have[n] || 0;
             const need = Math.max(0, q - h);
             
-            // --- ВОТ ЗДЕСЬ ИЗМЕНЕНИЯ ДЛЯ КЛИКАБЕЛЬНОСТИ ---
-            const li = el('li', 'clickable-resource', `
-                <div class="item-wrapper">${getIconHtml(n)} <b>${n}</b></div>
-                <span style="text-align:right">
-                    <span class="${need > 0 ? 'missing-resource' : 'enough-resource'}">x${q}</span>
-                    <span class="base-total-label">Need: ${q} (Have: ${h})</span>
-                </span>
-            `, { title: "Click to find scrap sources" });
+            const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">Need: ${need}</span>`;
+            const tid = `node-${Math.random().toString(36).substr(2, 7)}`;
             
-            li.onclick = () => appendReverseScrap(n);
+            const h4 = el('h4', '', `
+                <div class="item-wrapper" style="cursor: pointer; display: flex; align-items: center;" 
+                     onclick="const t=document.getElementById('${tid}'); const isCl=t.classList.toggle('collapsed'); this.querySelector('.toggle-icon').textContent = isCl ? '▶' : '▼';">
+                    <span class="toggle-icon" style="display:inline-block; width:15px; font-size:0.85em; color:var(--color-neon-blue);">▶</span>
+                    ${getIconHtml(n)} ${n} ${badge} <span style="margin-left:5px;">(x${q})</span>
+                </div>
+            `);
+
+            const li = el('li', '');
+            li.appendChild(h4);
+            
+            if (isCraftable(n)) {
+                const tree = renderTree(n, q, false, true, 1); 
+                if (tree) {
+                    tree.id = tid;
+                    tree.classList.add('collapsed'); 
+                    li.appendChild(tree);
+                }
+            }
+            
             list.appendChild(li);
-            // --- КОНЕЦ ИЗМЕНЕНИЙ ---
         });
     };
 
@@ -352,7 +408,6 @@ function renderInventoryUI(f = '') {
         
         const inner = el('div', 'items-list-content-inner');
 
-        // ПРОВЕРКА КАТЕГОРИИ "Material"
         if (cat === 'Material') {
             const tip = el('div', 'interaction-tip2', '💡 Tip: Click on any material below to see what items you can scrap to get it');
             tip.style.margin = '5px 4px 15px 4px'; 
@@ -455,15 +510,21 @@ function renderInventoryUI(f = '') {
         content.appendChild(inner); group.appendChild(content); dom.inventoryContainer.appendChild(group);
     });
 }
+
 function renderRecipeBreakdown(sel, ldt) {
     const list = document.getElementById('recipe-breakdown-list'); if (!list) return; list.innerHTML = '';
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     const renderSection = (source, label) => {
         Object.entries(source).sort().forEach(([k, q]) => {
             if (q <= 0) return; const item = parseKey(k);
+            
+            const hasRecipe = isCraftable(item.name) || (item.tier > 1 && WEAPON_UPGRADES?.[item.name]);
+            if (!hasRecipe) return; 
+
             const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">${label}</span>`;
             const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier > 1 ? ROMANS[item.tier] : ''} ${badge} (x${q})</div></h4>`);
-            if (isCraftable(item.name)) {
+            
+            if (hasRecipe) {
                 const tree = renderTree(item.name, q, false, true, item.tier); if (tree) li.appendChild(tree);
             }
             list.appendChild(li);
@@ -473,19 +534,91 @@ function renderRecipeBreakdown(sel, ldt) {
     if (tab !== 'craft-goals') renderSection(ldt, 'LOADOUT');
 }
 
+// --- ЧИСТЫЙ ЭКСПОРТ CSV ---
 function exportToCSV() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
-    const combinedData = (tab === 'craft-goals') ? lastGoalsNeed : (tab === 'loadouts' ? lastLdtNeed : { ...lastGoalsNeed, ...lastLdtNeed });
+    
+    // 1. Собираем корень элементов на основе активной вкладки
+    const sel = (tab !== 'loadouts') ? { ...userSelection } : {};
+    const ldt = (tab !== 'craft-goals') ? (() => {
+        const mult = parseInt(dom.loadoutMultiplier?.value) || 1;
+        const res = {};
+        Object.values(currentLoadout).forEach(d => {
+            if (d?.name) {
+                const q = (d.qty || 1) * mult;
+                const k = getKey(d.name, d.tier);
+                res[k] = (res[k] || 0) + q;
+            }
+        });
+        return res;
+    })() : {};
 
-    let csv = "Resource Name,Total Needed\n";
-    csv += "--- BASE RESOURCES ---\n";
-    Object.entries(combinedData).filter(([n]) => !isCraftable(n)).sort().forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
+    const combinedSource = { ...sel };
+    Object.entries(ldt).forEach(([k, q]) => combinedSource[k] = (combinedSource[k] || 0) + q);
 
-    csv += "\n--- CRAFTING INGREDIENTS ---\n";
-    Object.entries(combinedData).filter(([n]) => isCraftable(n)).sort().forEach(([n, q]) => {
-        const isTarget = userSelection[n] || Object.values(currentLoadout).some(d => d?.name === n);
-        if (!isTarget || q > (userSelection[n] || 0)) { csv += `"${n}",${q}\n`; }
-    });
+    // 2. Логика расчета ПРЯМЫХ требований (аналог UI 'Base Resources')
+    const getDirect = (source) => {
+        const reqs = {};
+        Object.entries(source).forEach(([k, q]) => {
+            if (q <= 0) return;
+            const { name, tier } = parseKey(k);
+            
+            const r = getRecipe(name);
+            if (r) {
+                const yieldVal = getYield(name);
+                const cycles = Math.ceil(q / yieldVal);
+                Object.entries(r).forEach(([ing, iq]) => {
+                    reqs[ing] = (reqs[ing] || 0) + iq * cycles;
+                });
+            } else if (!isCraftable(name)) {
+                reqs[name] = (reqs[name] || 0) + q;
+            }
+            
+            if (tier > 1 && WEAPON_UPGRADES?.[name]) {
+                for (let t = 2; t <= tier; t++) {
+                    const upg = WEAPON_UPGRADES[name][t];
+                    if (upg) Object.entries(upg).forEach(([uI, uQ]) => {
+                        reqs[uI] = (reqs[uI] || 0) + uQ * q;
+                    });
+                }
+            }
+        });
+        return reqs;
+    };
+
+    const directReqs = getDirect(combinedSource);
+    const ingredients = Object.entries(directReqs).filter(([n]) => isCraftable(n)).sort();
+    const baseRes = Object.entries(directReqs).filter(([n]) => !isCraftable(n)).sort();
+
+    // 3. Абсолютно все базовые материалы (сплющенные в 0 уровень)
+    const combinedNeeds = {};
+    if (tab !== 'loadouts') {
+        Object.entries(lastGoalsNeed).forEach(([k, v]) => combinedNeeds[k] = (combinedNeeds[k] || 0) + v);
+    }
+    if (tab !== 'craft-goals') {
+        Object.entries(lastLdtNeed).forEach(([k, v]) => combinedNeeds[k] = (combinedNeeds[k] || 0) + v);
+    }
+    const totalRaw = Object.entries(combinedNeeds).filter(([n]) => !isCraftable(n)).sort();
+
+    // 4. Формируем финальный вид файла (с кодировкой BOM для Excel)
+    let csv = "\uFEFFResource Name,Quantity\n";
+    
+    if (ingredients.length > 0) {
+        csv += "--- RESOURCES FOR GOALS ---\n";
+        ingredients.forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
+        csv += "\n";
+    }
+
+    if (baseRes.length > 0) {
+        csv += "--- DIRECT RAW MATERIALS ---\n";
+        baseRes.forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
+        csv += "\n";
+    }
+
+    if (totalRaw.length > 0) {
+        csv += "--- TOTAL RAW MATERIALS (ALL INCLUSIVE) ---\n";
+        totalRaw.forEach(([n, q]) => { csv += `"${n}",${q}\n`; });
+    }
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
@@ -504,15 +637,14 @@ function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
     const yieldVal = getYield(name);
     const cycles = Math.ceil(qty / yieldVal);
 
-    const addItemToTree = (ing, iq, tLabel = '') => {
+    const addItemToTree = (ing, iq) => {
         const total = iq * (isRoot ? cycles : qty);
         const isC = isCraftable(ing), li = el('li', 'recipe-item');
         const tid = `node-${Math.random().toString(36).substr(2, 7)}`;
-        const badge = tLabel ? `<span style="font-size:0.6rem; color:var(--color-highlight-yellow); border:1px solid; padding:0 3px; margin-right:5px; vertical-align:middle;">${tLabel}</span>` : '';
         const batchInfo = (yieldVal > 1 && isRoot) ? ` <small style="color:var(--color-text-dim); font-size:0.7rem;">(Batch: x${yieldVal})</small>` : '';
 
         const toggle = el('div', `craft-item-toggle ${isC ? 'craftable' : 'base-resource'}`,
-            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC ? '▶' : ''}</span>${getIconHtml(ing)} <span class="item-name-display">${badge}${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
+            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC ? '▶' : ''}</span>${getIconHtml(ing)} <span class="item-name-display">${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
             isC ? { 'data-target': tid } : {});
 
         li.appendChild(toggle);
@@ -523,15 +655,28 @@ function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
         inner.appendChild(li);
     };
 
-    if (r) Object.entries(r).sort().forEach(([ing, iq]) => addItemToTree(ing, iq));
+    if (r) {
+        if (tier > 1 && WEAPON_UPGRADES?.[name]) {
+            const divLi = el('li', '', `<div style="margin: 8px 0 4px 22px; font-size: 0.75rem; color: var(--color-text-dim); text-transform: uppercase; letter-spacing: 0.5px;">⮬ Base Crafting</div>`);
+            inner.appendChild(divLi);
+        }
+        Object.entries(r).sort().forEach(([ing, iq]) => addItemToTree(ing, iq));
+    }
+
     if (tier > 1 && WEAPON_UPGRADES?.[name]) {
         for (let t = 2; t <= tier; t++) {
             const upg = WEAPON_UPGRADES[name][t];
-            if (upg) Object.entries(upg).sort().forEach(([ing, iq]) => addItemToTree(ing, iq, `T${t}`));
+            if (upg) {
+                const divLi = el('li', '', `<div style="margin: 10px 0 4px 22px; font-size: 0.75rem; color: var(--color-accent-orange); text-transform: uppercase; font-family: 'Orbitron', sans-serif; letter-spacing: 0.5px; opacity: 0.9;">⮬ Upgrade to Tier ${ROMANS[t]}</div>`);
+                inner.appendChild(divLi);
+                
+                Object.entries(upg).sort().forEach(([ing, iq]) => addItemToTree(ing, iq));
+            }
         }
     }
     ul.appendChild(inner); return ul;
 }
+
 // ==========================================
 // --- NEW SCRAPPER / RECYCLER LOGIC ---
 // ==========================================
@@ -686,6 +831,7 @@ function renderScrapperYield() {
         dismantleBtn.disabled = false;
     }
 }
+
 function dismantleSelected() {
     let itemsScrapped = false;
 
@@ -730,10 +876,8 @@ function appendReverseScrap(materialName) {
     const list = document.getElementById('reverse-lookup-list');
     if (!container || !list || typeof RECYCLE_DB === 'undefined') return;
 
-    // --- НОВОЕ: Убираем пустой текст-подсказку при первом клике ---
     const emptyState = document.getElementById('lookup-empty-state');
     if (emptyState) emptyState.remove();
-
 
     const safeIdName = materialName.replace(/[^a-zA-Z0-9]/g, '-');
     const groupId = `lookup-group-${safeIdName}`;
@@ -870,7 +1014,6 @@ function renderSlot(id, node = null) {
     const data = currentLoadout[id], map = { gear: 'Amplifier', shield: 'Shield', primary: 'Primary', secondary: 'Secondary' };
     const label = slot.dataset.label || map[id] || '';
 
-    // ДОБАВЛЕНО: Класс активного редактируемого слота
     const isActive = (id === activeSlotId);
 
     if (data) {
@@ -923,17 +1066,15 @@ function loadPreset(name) {
     renderLoadoutUI();
 }
 
-// --- УЛУЧШЕННАЯ МОДАЛКА (SERIAL PICKER) ---
 function openModal(slotId, filter) {
     activeSlotId = slotId;
-    renderLoadoutUI(); // Подсвечиваем активный слот
+    renderLoadoutUI();
 
     const modal = document.getElementById('item-selector-modal'), list = document.getElementById('modal-items-list');
     const search = document.getElementById('modal-search');
 
     modal.classList.remove('hidden'); list.innerHTML = ''; search.value = '';
 
-    // Закрытие по клику вне контента
     modal.onclick = (e) => { if (e.target === modal) closeModal(); };
 
     const grouped = {};
@@ -959,11 +1100,9 @@ function openModal(slotId, filter) {
         grouped[cat].sort().forEach(name => {
             const row = el('div', 'modal-item-row', `<div class="modal-item-info">${getIconHtml(name)} <span>${name}</span></div>`);
 
-            // Функция выбора предмета
             const selectItem = (tier = 1) => {
                 currentLoadout[activeSlotId] = { name, qty: 1, tier: tier };
                 
-                // SERIAL MODE: Для Backpack и Quick слотов ищем следующий пустой слот
                 const isSerial = activeSlotId.startsWith('bp') || activeSlotId.startsWith('quick');
                 if (isSerial) {
                     const prefix = activeSlotId.match(/[a-zA-Z]+/)[0];
@@ -973,7 +1112,7 @@ function openModal(slotId, filter) {
 
                     if (nextSlot) {
                         activeSlotId = nextSlot.dataset.slot;
-                        renderLoadoutUI(); // Сдвигаем подсветку
+                        renderLoadoutUI();
                     } else {
                         closeModal();
                     }
@@ -1143,7 +1282,6 @@ function initEvents() {
         renderInventoryUI(e.target.value);
     };
 
-    // ФИКС QTY LOADOUTS: Оживили кнопки + и - для множителя лодаута
     if (dom.loadoutMultiplier) dom.loadoutMultiplier.oninput = calculateTotal;
     if (dom.loadoutDec) dom.loadoutDec.onclick = () => { dom.loadoutMultiplier.value = Math.max(1, parseInt(dom.loadoutMultiplier.value || 1) - 1); calculateTotal(); };
     if (dom.loadoutInc) dom.loadoutInc.onclick = () => { dom.loadoutMultiplier.value = parseInt(dom.loadoutMultiplier.value || 1) + 1; calculateTotal(); };
@@ -1195,12 +1333,10 @@ function renderItemsUI(f = '') {
     if (!dom.itemsContainer) return;
     dom.itemsContainer.innerHTML = '';
 
-    // ФИКС: Проверка поиска и приведение в нижний регистр
     const hasSearch = f.trim().length > 0;
     const searchTerm = f.toLowerCase();
 
     Object.entries(ALL_CRAFT_DATA).forEach(([cat, map]) => {
-        // ФИКС: Поиск работает и по имени предмета, и по имени категории (например "Weapons")
         const isCatMatch = cat.toLowerCase().includes(searchTerm);
         const filtered = Object.keys(map).filter(i => isCatMatch || i.toLowerCase().includes(searchTerm));
         if (!filtered.length) return;
@@ -1218,7 +1354,6 @@ function renderItemsUI(f = '') {
             const row = el('div', 'item-row');
             let pips = WEAPON_UPGRADES?.[name] ? `<div class="tier-pips">${[1, 2, 3, 4].map(t => `<div class="tier-pip ${t <= tier ? 'active' : ''}" data-action="set-tier" data-item="${name}" data-tier="${t}"></div>`).join('')}</div>` : '';
 
-            // ФИКС: Кнопки вызывают onchange у input, чтобы данные точно улетели в базу
             row.innerHTML = `<div class="item-wrapper">${getIconHtml(name)}<div class="item-info-col"><span>${name}</span>${pips}</div></div>
                 <div class="quantity-control">
                     <button class="qty-btn" onclick="let i=this.nextElementSibling; i.value=Math.max(0, parseInt(i.value)-1); i.dispatchEvent(new Event('change'))">-</button>
