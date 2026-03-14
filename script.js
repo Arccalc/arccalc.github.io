@@ -1,7 +1,7 @@
 /**
  * ARC Raiders // Advanced Resource Calculator
  * FINAL VERSION: Standalone Tier Pricing, Inventory Steps, UI Sync, SCRAPPER & REVERSE LOOKUP
- * UPDATE: Clean CSV Export (Resources for Goals, Direct Raw Materials, Total Raw Materials)
+ * UPDATE: Blueprint Logic with Inline Inventory Badges (Need/Have)
  */
 
 const STATE_KEYS = {
@@ -317,16 +317,16 @@ function renderIngredients(sel, ldt, have) {
             if (q <= 0) return;
             
             const h = have[n] || 0;
-            const need = Math.max(0, q - h);
+            const need = Math.max(0, q - h); 
             
             const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">Need: ${need}</span>`;
             const tid = `node-${Math.random().toString(36).substr(2, 7)}`;
             
             const h4 = el('h4', '', `
                 <div class="item-wrapper" style="cursor: pointer; display: flex; align-items: center;" 
-                     onclick="const t=document.getElementById('${tid}'); const isCl=t.classList.toggle('collapsed'); this.querySelector('.toggle-icon').textContent = isCl ? '▶' : '▼';">
+                     onclick="const t=document.getElementById('${tid}'); if(t){ const isCl=t.classList.toggle('collapsed'); this.querySelector('.toggle-icon').textContent = isCl ? '▶' : '▼'; }">
                     <span class="toggle-icon" style="display:inline-block; width:15px; font-size:0.85em; color:var(--color-neon-blue);">▶</span>
-                    ${getIconHtml(n)} ${n} ${badge} <span style="margin-left:5px;">(x${q})</span>
+                    ${getIconHtml(n)} ${n} ${badge} <span style="margin-left:5px;">(Total: x${q})</span>
                 </div>
             `);
 
@@ -334,6 +334,7 @@ function renderIngredients(sel, ldt, have) {
             li.appendChild(h4);
             
             if (isCraftable(n)) {
+                // Строим дерево всегда на полное количество (Blueprint логика)
                 const tree = renderTree(n, q, false, true, 1); 
                 if (tree) {
                     tree.id = tid;
@@ -521,11 +522,16 @@ function renderRecipeBreakdown(sel, ldt) {
             const hasRecipe = isCraftable(item.name) || (item.tier > 1 && WEAPON_UPGRADES?.[item.name]);
             if (!hasRecipe) return; 
 
+            const h = userInventory[k] || 0;
+            const need = Math.max(0, q - h);
+
             const badge = `<span class="source-badge" style="font-size:0.7rem; color:var(--color-neon-blue); border:1px solid; padding:1px 4px; margin-left:10px;">${label}</span>`;
-            const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier > 1 ? ROMANS[item.tier] : ''} ${badge} (x${q})</div></h4>`);
+            const li = el('li', '', `<h4><div class="item-wrapper">${getIconHtml(item.name)} ${item.name} ${item.tier > 1 ? ROMANS[item.tier] : ''} ${badge} <span style="margin-left:5px;">(Need: ${need} / Total: ${q})</span></div></h4>`);
             
             if (hasRecipe) {
-                const tree = renderTree(item.name, q, false, true, item.tier); if (tree) li.appendChild(tree);
+                // Строим дерево всегда на полное количество (Blueprint логика)
+                const tree = renderTree(item.name, q, false, true, item.tier); 
+                if (tree) li.appendChild(tree);
             }
             list.appendChild(li);
         });
@@ -534,11 +540,9 @@ function renderRecipeBreakdown(sel, ldt) {
     if (tab !== 'craft-goals') renderSection(ldt, 'LOADOUT');
 }
 
-// --- ЧИСТЫЙ ЭКСПОРТ CSV ---
 function exportToCSV() {
     const tab = document.querySelector('.tab-btn.active')?.dataset.tab;
     
-    // 1. Собираем корень элементов на основе активной вкладки
     const sel = (tab !== 'loadouts') ? { ...userSelection } : {};
     const ldt = (tab !== 'craft-goals') ? (() => {
         const mult = parseInt(dom.loadoutMultiplier?.value) || 1;
@@ -556,7 +560,6 @@ function exportToCSV() {
     const combinedSource = { ...sel };
     Object.entries(ldt).forEach(([k, q]) => combinedSource[k] = (combinedSource[k] || 0) + q);
 
-    // 2. Логика расчета ПРЯМЫХ требований (аналог UI 'Base Resources')
     const getDirect = (source) => {
         const reqs = {};
         Object.entries(source).forEach(([k, q]) => {
@@ -590,7 +593,6 @@ function exportToCSV() {
     const ingredients = Object.entries(directReqs).filter(([n]) => isCraftable(n)).sort();
     const baseRes = Object.entries(directReqs).filter(([n]) => !isCraftable(n)).sort();
 
-    // 3. Абсолютно все базовые материалы (сплющенные в 0 уровень)
     const combinedNeeds = {};
     if (tab !== 'loadouts') {
         Object.entries(lastGoalsNeed).forEach(([k, v]) => combinedNeeds[k] = (combinedNeeds[k] || 0) + v);
@@ -600,7 +602,6 @@ function exportToCSV() {
     }
     const totalRaw = Object.entries(combinedNeeds).filter(([n]) => !isCraftable(n)).sort();
 
-    // 4. Формируем финальный вид файла (с кодировкой BOM для Excel)
     let csv = "\uFEFFResource Name,Quantity\n";
     
     if (ingredients.length > 0) {
@@ -628,7 +629,10 @@ function exportToCSV() {
     window.URL.revokeObjectURL(url); document.body.removeChild(a);
 }
 
+// --- ИЗМЕНЕННАЯ ФУНКЦИЯ ДЕРЕВА (ИНФОРМАТИВНЫЕ БЕЙДЖИ) ---
 function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
+    if (qty <= 0) return null;
+
     const r = getRecipe(name);
     if (!r && !(tier > 1 && WEAPON_UPGRADES?.[name])) return null;
 
@@ -643,8 +647,14 @@ function renderTree(name, qty, isNested = true, isRoot = false, tier = 1) {
         const tid = `node-${Math.random().toString(36).substr(2, 7)}`;
         const batchInfo = (yieldVal > 1 && isRoot) ? ` <small style="color:var(--color-text-dim); font-size:0.7rem;">(Batch: x${yieldVal})</small>` : '';
 
+        // Добавляем проверку инвентаря для конкретного узла без изменения математики самого дерева
+        const have = userInventory[ing] || 0;
+        const need = Math.max(0, total - have);
+        const needColor = need > 0 ? 'var(--color-accent-orange)' : 'var(--color-enough)';
+        const invInfo = ` <span style="margin-left: 8px; font-size: 0.75rem; color: var(--color-text-dim); font-weight: normal;">(Need: <span style="color: ${needColor};">${need}</span> / Have: <span style="color: var(--color-enough);">${have}</span>)</span>`;
+
         const toggle = el('div', `craft-item-toggle ${isC ? 'craftable' : 'base-resource'}`,
-            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC ? '▶' : ''}</span>${getIconHtml(ing)} <span class="item-name-display">${ing}</span>${batchInfo}</div><span class="res-qty">x${total}</span>`,
+            `<div style="display:flex; align-items:center;"><span class="toggle-arrow">${isC ? '▶' : ''}</span>${getIconHtml(ing)} <span class="item-name-display">${ing}</span>${batchInfo}${invInfo}</div><span class="res-qty">x${total}</span>`,
             isC ? { 'data-target': tid } : {});
 
         li.appendChild(toggle);
