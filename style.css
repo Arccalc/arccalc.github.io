@@ -482,7 +482,7 @@ h2.panel-title.total-header {
     box-shadow: inset 0 0 3px rgba(255, 234, 90, 0.5);
 }
 
-/* --- НОВИНКА: КАРТОЧКА ОБЩЕГО КАПИТАЛА --- */
+/* --- КАРТОЧКА ОБЩЕГО КАПИТАЛА --- */
 .inventory-net-worth-card {
     background: linear-gradient(135deg, rgba(255, 234, 90, 0.15) 0%, rgba(0, 0, 0, 0.4) 100%);
     border: 1px solid var(--color-highlight-yellow);
@@ -780,13 +780,11 @@ h2.panel-title.total-header {
 }
 
 /* ========================================= */
-/* VII. KO-FI WIDGET */
+/* VII. KO-FI WIDGET (UNIFIED DESIGN) */
 /* ========================================= */
+
+/* ЕДИНЫЙ КЛАСС С ДИЗАЙНОМ И АНИМАЦИЯМИ ДЛЯ ВСЕХ УСТРОЙСТВ */
 .kofi-widget {
-    position: fixed;
-    top: 25px;
-    left: 25px;
-    z-index: 2000;
     display: flex;
     align-items: center;
     gap: 15px;
@@ -798,6 +796,7 @@ h2.panel-title.total-header {
     text-decoration: none;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    box-sizing: border-box;
 }
 
 .kofi-widget::after {
@@ -818,6 +817,7 @@ h2.panel-title.total-header {
     vertical-align: middle;
 }
 
+/* ЭФФЕКТЫ ПРИ НАВЕДЕНИИ (одинаково для всех) */
 .kofi-widget:hover {
     background: rgba(12, 18, 25, 0.98);
     border-color: var(--color-neon-blue);
@@ -833,6 +833,24 @@ h2.panel-title.total-header {
 .kofi-widget:hover::after {
     color: var(--color-neon-blue);
     text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+/* 1. ПОВЕДЕНИЕ НА ДЕСКТОПЕ (Левый верхний угол) */
+.kofi-desktop {
+    position: fixed;
+    top: 25px;
+    left: 25px;
+    z-index: 2000;
+}
+
+/* 2. ПОВЕДЕНИЕ НА ТЕЛЕФОНЕ (Справа от заголовка) */
+.kofi-mobile {
+    display: none !important; /* По умолчанию скрыта */
+}
+
+/* Контейнер шапки (нужен только для мобилок) */
+.panel-header {
+    display: block;
 }
 
 /* ========================================= */
@@ -1134,29 +1152,61 @@ h2.panel-title.total-header {
     }
 }
 
+/* ========================================= */
+/* АДАПТИВ ПОД ТЕЛЕФОНЫ (768px и меньше) */
+/* ========================================= */
 @media (max-width: 768px) {
-    .kofi-widget {
-        inset: auto auto 20px 20px;
-        padding: 10px 15px;
+    
+    /* 1. Прячем ПК-кнопку */
+    .kofi-desktop {
+        display: none !important;
     }
 
-    .kofi-widget img {
-        height: 32px !important;
+    /* 2. Показываем мобильную кнопку */
+    .kofi-mobile {
+        display: flex !important;
+        position: static !important;
+        padding: 5px 12px;
+        gap: 8px; /* Чуть меньше зазор для компактности */
+        border-radius: 4px;
+        box-shadow: none; /* Убираем тень, чтобы не выбивалась из шапки */
     }
 
-    .kofi-widget::after {
-        display: none;
+    /* 3. Центрируем в шапке панели */
+    .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--color-neon-blue);
+        padding-bottom: 8px;
+        margin-bottom: 15px;
+    }
+
+    h2.panel-title {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin: 0;
+    }
+
+    /* 4. Масштабируем дизайн под телефон */
+    .kofi-mobile img {
+        height: 28px !important;
+    }
+
+    .kofi-mobile::after {
+        font-size: 0.75rem; /* Текст чуть меньше */
+        letter-spacing: 1px;
     }
 }
 
 @media (max-width: 480px) {
-    .panel-header-wrapper {
-        flex-direction: row;
+    /* Если экран совсем узкий — прячем текст SUPPORT DEV, оставляем только иконку */
+    .kofi-mobile::after {
+        display: none;
     }
-
-    .icon-btn {
-        font-size: 0.7rem;
-        padding: 4px 8px;
+    
+    .kofi-mobile {
+        padding: 5px 8px;
     }
 }
 
@@ -1710,6 +1760,7 @@ h2.panel-title.total-header {
     border-left: 2px solid var(--color-neon-blue);
     padding-left: 12px;
 }
+
 .tab-alert {
     animation: tab-pulse 1.5s infinite;
     border-color: var(--color-accent-orange) !important;
@@ -1910,6 +1961,7 @@ h2.panel-title.total-header {
         transform: scale(1);
     }
 }
+
 /* ========================================= */
 /* UX / TIPS & REVERSE LOOKUP ALERTS */
 /* ========================================= */
@@ -1976,17 +2028,4 @@ h2.panel-title.total-header {
 
 #craft-total-list li {
     display: block !important;
-}
-
-@media (max-width: 768px) {
-    .kofi-widget {
-        position: relative !important; 
-        inset: auto !important;        
-        margin: 20px auto !important;  
-        display: flex !important;
-        width: fit-content;            
-        top: 0 !important;
-        left: 0 !important;
-        box-shadow: none !important;   
-    }
 }
