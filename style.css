@@ -1977,3 +1977,10 @@ h2.panel-title.total-header {
 #craft-total-list li {
     display: block !important;
 }
+
+@media (max-width: 480px) {
+    #input-panel .panel-content, 
+    #output-panel .panel-content {
+        padding-bottom: 100px !important;
+    }
+}
