@@ -198,54 +198,246 @@ const ITEM_PRICES = {
     'Pilgrim\'s Peak Code': 0, 'Raider\'s Refuge Code': 0, 'Reinforced Reception Code': 0, 'Surveyor Vault': 2000
 };
 const CRAFT_DB = {
-    'Weapons': {
-        'Ferro': {'Metal Parts': 5, 'Rubber Parts': 2}, 'Hairpin': {'Metal Parts': 2, 'Plastic Parts': 5}, 'Kettle': {'Metal Parts': 6, 'Rubber Parts': 8}, 'Stitcher': {'Metal Parts': 8, 'Rubber Parts': 4}, 'Rattler': {'Metal Parts': 16, 'Rubber Parts': 12}, 'Anvil': {'Mechanical Components': 5, 'Simple Gun Parts': 6}, 'Arpeggio': {'Mechanical Components': 6, 'Simple Gun Parts': 6}, 'Burletta': {'Mechanical Components': 3, 'Simple Gun Parts': 3}, 'Il Toro': {'Mechanical Components': 5, 'Simple Gun Parts': 6}, 'Torrente': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Steel Spring': 6}, 'Osprey': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Wires': 7}, 'Venator': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Magnet': 5}, 'Renegade': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Oil': 5}, 'Bettina': {'Advanced Mechanical Components': 3, 'Heavy Gun Parts': 3, 'Canister': 3}, 'Tempest': {'Magnetic Accelerator': 1, 'Medium Gun Parts': 3, 'Exodus Modules': 2}, 'Bobcat': {'Magnetic Accelerator': 1, 'Light Gun Parts': 3, 'Exodus Modules': 2}, 'Vulcano': {'Magnetic Accelerator': 1, 'Heavy Gun Parts': 3, 'Exodus Modules': 1}, 'Hullcracker': {'Magnetic Accelerator': 1, 'Heavy Gun Parts': 3, 'Exodus Modules': 1}, 'Jupiter': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Queen Reactor': 1}, 'Equalizer': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Queen Reactor': 1}, 'Aphelion': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Matriarch Reactor': 1}
-    },
-    'Weapon Attachments': {
-        'Angled Grip I': {'Plastic Parts': 6, 'Duct Tape': 1}, 'Angled Grip II': {'Mechanical Components': 2, 'Duct Tape': 3}, 'Angled Grip III': {'Mod Components': 2, 'Duct Tape': 5}, 'Vertical Grip I': {'Plastic Parts': 6, 'Duct Tape': 1}, 'Vertical Grip II': {'Mechanical Components': 2, 'Duct Tape': 3}, 'Vertical Grip III': {'Mod Components': 2, 'Duct Tape': 5}, 'Horizontal Grip': {'Mod Components': 2, 'Duct Tape': 5}, 'Compensator I': {'Metal Parts': 6, 'Wires': 1}, 'Compensator II': {'Mechanical Components': 2, 'Wires': 4}, 'Compensator III': {'Mod Components': 2, 'Wires': 8}, 'Muzzle Brake I': {'Metal Parts': 6, 'Wires': 1}, 'Muzzle Brake II': {'Mechanical Components': 2, 'Wires': 4}, 'Muzzle Brake III': {'Mod Components': 2, 'Wires': 8}, 'Silencer I': {'Mechanical Components': 2, 'Wires': 4}, 'Silencer II': {'Mod Components': 2, 'Wires': 8}, 'Shotgun Choke I': {'Metal Parts': 6, 'Wires': 1}, 'Shotgun Choke II': {'Mechanical Components': 2, 'Wires': 4}, 'Shotgun Choke III': {'Mod Components': 2, 'Wires': 8}, 'Shotgun Silencer': {'Mod Components': 2, 'Wires': 8}, 'Extended Light Mag I': {'Plastic Parts': 6, 'Steel Spring': 1}, 'Extended Light Mag II': {'Mechanical Components': 2, 'Steel Spring': 3}, 'Extended Light Mag III': {'Mod Components': 2, 'Steel Spring': 5}, 'Extended Medium Mag I': {'Plastic Parts': 6, 'Steel Spring': 1}, 'Extended Medium Mag II': {'Mechanical Components': 2, 'Steel Spring': 3}, 'Extended Medium Mag III': {'Mod Components': 2, 'Steel Spring': 5}, 'Extended Shotgun Mag I': {'Plastic Parts': 6, 'Steel Spring': 1}, 'Extended Shotgun Mag II': {'Mechanical Components': 2, 'Steel Spring': 3}, 'Extended Shotgun Mag III': {'Mod Components': 2, 'Steel Spring': 5}, 'Stable Stock I': {'Rubber Parts': 6, 'Duct Tape': 1}, 'Stable Stock II': {'Mechanical Components': 2, 'Duct Tape': 3}, 'Stable Stock III': {'Mod Components': 2, 'Duct Tape': 5}, 'Lightweight Stock': {'Mod Components': 2, 'Duct Tape': 5}, 'Padded Stock': {'Mod Components': 2, 'Duct Tape': 5}, 'Extended Barrel': {'Mod Components': 2, 'Wires': 8}
-    },
     'Ammo': {
-        'Light Ammo': {'Metal Parts': 3, 'Chemicals': 2}, 'Medium Ammo': {'Metal Parts': 3, 'Chemicals': 2}, 'Shotgun Ammo': {'Metal Parts': 3, 'Chemicals': 2}, 'Heavy Ammo': {'Metal Parts': 3, 'Chemicals': 2}, 'Launcher Ammo': {'ARC Motion Core': 1, 'Crude Explosives': 2}, 'Energy Clip': {'Advanced ARC Powercell': 1, 'Battery': 2}
-    },
-    'Grenades / Explosives': {
-        'Light Impact Grenade': {'Plastic Parts': 2, 'Chemicals': 3}, 'Shrapnel Grenade': {'Crude Explosives': 1, 'Steel Spring': 2}, 'Snap Blast Grenade': {'Crude Explosives': 2, 'Magnet': 1}, 'Gas Grenade': {'Chemicals': 4, 'Rubber Parts': 2}, 'Heavy Fuse Grenade': {'Explosive Compound': 1, 'Canister': 2}, 'Jolt Mine': {'Electrical Components': 1, 'Battery': 1}, 'Trigger Node': {'Crude Explosives': 2, 'Processor': 1}, 'Blaze Grenade': {'Explosive Compound': 1, 'Oil': 2}, 'Showstopper': {'Electrical Components': 1, 'Hornet Driver': 1, 'Voltage Converter': 1}, 'Seeker Grenade': {'Crude Explosives': 1, 'ARC Alloy': 2}, 'Wolfpack': {'Explosive Compound': 1, 'ARC Motion Core': 2, 'Rocketeer Driver': 1}, 'Smoke Grenade': {'Chemicals': 14, 'Canister': 1}, 'Tagging Grenade': {'Electrical Components': 1, 'Sensors': 1}, 'Light Stick': {'Chemicals': 3}, 'Deadline Mine': {'Comet Igniter': 1, 'Explosive Compound': 3, 'ARC Circuitry': 2}, 'Trailblazer': {'Synthesized Fuel': 1, 'Crude Explosives': 2, 'Firefly Burner': 1}
-    },
-    'Utility': {
-        'Binoculars': {'Plastic Parts': 8, 'Rubber Parts': 4}, 'Photoelectric Cloak': {'Advanced Electrical Components': 2, 'Speaker Component': 4}, 'Snap Hook': {'Power Rod': 2, 'Rope': 3, 'Exodus Modules': 1}, 'Lure Grenade': {'Speaker Component': 1, 'Electrical Components': 1}, 'Lil Smoke Grenade': {'Chemicals': 5, 'Plastic Parts': 1}, 'Raider Hatchkey': {'Advanced Electrical Components': 1, 'Sensors': 3}, 'Zipline': {'Rope': 1, 'Mechanical Components': 1}, 'Door Blocker': {'Metal Parts': 3, 'Rubber Parts': 3}, 'Barricade Kit': {'Mechanical Components': 1}
+        'Energy Clip': {'Advanced ARC Powercell': 1, 'Battery': 2},
+        'Heavy Ammo': {'Metal Parts': 3, 'Chemicals': 2},
+        'Launcher Ammo': {'ARC Motion Core': 1, 'Crude Explosives': 2},
+        'Light Ammo': {'Metal Parts': 3, 'Chemicals': 2},
+        'Medium Ammo': {'Metal Parts': 3, 'Chemicals': 2},
+        'Shotgun Ammo': {'Metal Parts': 3, 'Chemicals': 2}
     },
     'Gear Sets': {
-        'Combat Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6}, 'Looting Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6}, 'Tactical Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6}, 'Combat Mark 2': {'Electrical Components': 2, 'Magnet': 3}, 'Looting Mark 2': {'Electrical Components': 2, 'Magnet': 3}, 'Tactical Mark 2': {'Electrical Components': 2, 'Magnet': 3}, 'Looting Mark 3 (Survivor)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Looting Mark 3 (Cautious)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Looting Mark 3 (Safekeeper)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Combat Mark 3 (Aggressive)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Combat Mark 3 (Flanking)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Tactical Mark 3 (Defensive)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Tactical Mark 3 (Healing)': {'Advanced Electrical Components': 2, 'Processor': 3}, 'Tactical Mark 3 (Revival)': {'Advanced Electrical Components': 2, 'Processor': 3}
+        'Combat Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6},
+        'Combat Mark 2': {'Electrical Components': 2, 'Magnet': 3},
+        'Combat Mark 3 (Aggressive)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Combat Mark 3 (Flanking)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Looting Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6},
+        'Looting Mark 2': {'Electrical Components': 2, 'Magnet': 3},
+        'Looting Mark 3 (Cautious)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Looting Mark 3 (Safekeeper)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Looting Mark 3 (Survivor)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Tactical Mark 1': {'Rubber Parts': 6, 'Plastic Parts': 6},
+        'Tactical Mark 2': {'Electrical Components': 2, 'Magnet': 3},
+        'Tactical Mark 3 (Defensive)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Tactical Mark 3 (Healing)': {'Advanced Electrical Components': 2, 'Processor': 3},
+        'Tactical Mark 3 (Revival)': {'Advanced Electrical Components': 2, 'Processor': 3}
     },
-    'Shields': {
-        'Light Shield': {'ARC Alloy': 2, 'Plastic Parts': 4}, 'Medium Shield': {'Battery': 4, 'ARC Circuitry': 1}, 'Heavy Shield': {'Power Rod': 1, 'Voltage Converter': 2}
+    'Grenades / Explosives': {
+        'Blaze Grenade': {'Explosive Compound': 1, 'Oil': 2},
+        'Deadline Mine': {'Comet Igniter': 1, 'Explosive Compound': 3, 'ARC Circuitry': 2},
+        'Gas Grenade': {'Chemicals': 4, 'Rubber Parts': 2},
+        'Heavy Fuse Grenade': {'Explosive Compound': 1, 'Canister': 2},
+        'Jolt Mine': {'Electrical Components': 1, 'Battery': 1},
+        'Light Impact Grenade': {'Plastic Parts': 2, 'Chemicals': 3},
+        'Light Stick': {'Chemicals': 3},
+        'Seeker Grenade': {'Crude Explosives': 1, 'ARC Alloy': 2},
+        'Showstopper': {'Electrical Components': 1, 'Hornet Driver': 1, 'Voltage Converter': 1},
+        'Shrapnel Grenade': {'Crude Explosives': 1, 'Steel Spring': 2},
+        'Smoke Grenade': {'Chemicals': 14, 'Canister': 1},
+        'Snap Blast Grenade': {'Crude Explosives': 2, 'Magnet': 1},
+        'Tagging Grenade': {'Electrical Components': 1, 'Sensors': 1},
+        'Trailblazer': {'Synthesized Fuel': 1, 'Crude Explosives': 2, 'Firefly Burner': 1},
+        'Trigger Node': {'Crude Explosives': 2, 'Processor': 1},
+        'Wolfpack': {'Explosive Compound': 1, 'ARC Motion Core': 2, 'Rocketeer Driver': 1}
     },
     'Medical': {
-        'Bandage': {'Fabric': 5}, 'Defibrillator': {'Plastic Parts': 9, 'Moss': 1}, 'Herbal Bandage': {'Durable Cloth': 1, 'Great Mullein': 1}, 'Sterilized Bandage': {'Durable Cloth': 2, 'Antiseptic': 1}, 'Vita Shot': {'Antiseptic': 2, 'Syringe': 1}, 'Vita Spray': {'Antiseptic': 3, 'Canister': 1, 'Tick Pod': 1}, 'Shield Recharger': {'Rubber Parts': 5, 'ARC Powercell': 1}, 'Surge Shield Recharger': {'Electrical Components': 1, 'Advanced ARC Powercell': 1}, 'Adrenaline Shot': {'Chemicals': 3, 'Plastic Parts': 3}
+        'Adrenaline Shot': {'Chemicals': 3, 'Plastic Parts': 3},
+        'Bandage': {'Fabric': 5},
+        'Defibrillator': {'Plastic Parts': 9, 'Moss': 1},
+        'Herbal Bandage': {'Durable Cloth': 1, 'Great Mullein': 1},
+        'Shield Recharger': {'Rubber Parts': 5, 'ARC Powercell': 1},
+        'Sterilized Bandage': {'Durable Cloth': 2, 'Antiseptic': 1},
+        'Surge Shield Recharger': {'Electrical Components': 1, 'Advanced ARC Powercell': 1},
+        'Vita Shot': {'Antiseptic': 2, 'Syringe': 1},
+        'Vita Spray': {'Antiseptic': 3, 'Canister': 1, 'Tick Pod': 1}
     },
     'Refiner': {
-        'Crude Explosives': {'Chemicals': 6}, 'Durable Cloth': {'Fabric': 14}, 'Electrical Components': {'Plastic Parts': 8, 'Rubber Parts': 4}, 'Mechanical Components': {'Metal Parts': 7, 'Rubber Parts': 3}, 'Advanced Electrical Components': {'Wires': 3, 'Electrical Components': 2}, 'Advanced Mechanical Components': {'Steel Spring': 2, 'Mechanical Components': 2}, 'Antiseptic': {'Chemicals': 10, 'Great Mullein': 2}, 'Explosive Compound': {'Crude Explosives': 2, 'Oil': 2}, 'Light Gun Parts': {'Simple Gun Parts': 4}, 'Heavy Gun Parts': {'Simple Gun Parts': 4}, 'Medium Gun Parts': {'Simple Gun Parts': 4}, 'Complex Gun Parts': {'Light Gun Parts': 2, 'Medium Gun Parts': 2, 'Heavy Gun Parts': 2}, 'Mod Components': {'Steel Spring': 2, 'Mechanical Components': 2}, 'ARC Circuitry': {'ARC Alloy': 8}, 'ARC Motion Core': {'ARC Alloy': 8}, 'Magnetic Accelerator': {'Advanced Mechanical Components': 2, 'ARC Motion Core': 2}, 'Power Rod': {'Advanced Electrical Components': 2, 'ARC Circuitry': 2}
+        'ARC Circuitry': {'ARC Alloy': 8},
+        'ARC Motion Core': {'ARC Alloy': 8},
+        'Advanced Electrical Components': {'Wires': 3, 'Electrical Components': 2},
+        'Advanced Mechanical Components': {'Steel Spring': 2, 'Mechanical Components': 2},
+        'Antiseptic': {'Chemicals': 10, 'Great Mullein': 2},
+        'Complex Gun Parts': {'Light Gun Parts': 2, 'Medium Gun Parts': 2, 'Heavy Gun Parts': 2},
+        'Crude Explosives': {'Chemicals': 6},
+        'Durable Cloth': {'Fabric': 14},
+        'Electrical Components': {'Plastic Parts': 8, 'Rubber Parts': 4},
+        'Explosive Compound': {'Crude Explosives': 2, 'Oil': 2},
+        'Heavy Gun Parts': {'Simple Gun Parts': 4},
+        'Light Gun Parts': {'Simple Gun Parts': 4},
+        'Magnetic Accelerator': {'Advanced Mechanical Components': 2, 'ARC Motion Core': 2},
+        'Mechanical Components': {'Metal Parts': 7, 'Rubber Parts': 3},
+        'Medium Gun Parts': {'Simple Gun Parts': 4},
+        'Mod Components': {'Steel Spring': 2, 'Mechanical Components': 2},
+        'Power Rod': {'Advanced Electrical Components': 2, 'ARC Circuitry': 2}
+    },
+    'Shields': {
+        'Heavy Shield': {'Power Rod': 1, 'Voltage Converter': 2},
+        'Light Shield': {'ARC Alloy': 2, 'Plastic Parts': 4},
+        'Medium Shield': {'Battery': 4, 'ARC Circuitry': 1}
+    },
+    'Utility': {
+        'Barricade Kit': {'Mechanical Components': 1},
+        'Binoculars': {'Plastic Parts': 8, 'Rubber Parts': 4},
+        'Door Blocker': {'Metal Parts': 3, 'Rubber Parts': 3},
+        'Lil Smoke Grenade': {'Chemicals': 5, 'Plastic Parts': 1},
+        'Lure Grenade': {'Speaker Component': 1, 'Electrical Components': 1},
+        'Photoelectric Cloak': {'Advanced Electrical Components': 2, 'Speaker Component': 4},
+        'Raider Hatchkey': {'Advanced Electrical Components': 1, 'Sensors': 3},
+        'Snap Hook': {'Power Rod': 2, 'Rope': 3, 'Exodus Modules': 1},
+        'Zipline': {'Rope': 1, 'Mechanical Components': 1}
+    },
+    'Weapon Attachments': {
+        'Angled Grip I': {'Plastic Parts': 6, 'Duct Tape': 1},
+        'Angled Grip II': {'Mechanical Components': 2, 'Duct Tape': 3},
+        'Angled Grip III': {'Mod Components': 2, 'Duct Tape': 5},
+        'Compensator I': {'Metal Parts': 6, 'Wires': 1},
+        'Compensator II': {'Mechanical Components': 2, 'Wires': 4},
+        'Compensator III': {'Mod Components': 2, 'Wires': 8},
+        'Extended Barrel': {'Mod Components': 2, 'Wires': 8},
+        'Extended Light Mag I': {'Plastic Parts': 6, 'Steel Spring': 1},
+        'Extended Light Mag II': {'Mechanical Components': 2, 'Steel Spring': 3},
+        'Extended Light Mag III': {'Mod Components': 2, 'Steel Spring': 5},
+        'Extended Medium Mag I': {'Plastic Parts': 6, 'Steel Spring': 1},
+        'Extended Medium Mag II': {'Mechanical Components': 2, 'Steel Spring': 3},
+        'Extended Medium Mag III': {'Mod Components': 2, 'Steel Spring': 5},
+        'Extended Shotgun Mag I': {'Plastic Parts': 6, 'Steel Spring': 1},
+        'Extended Shotgun Mag II': {'Mechanical Components': 2, 'Steel Spring': 3},
+        'Extended Shotgun Mag III': {'Mod Components': 2, 'Steel Spring': 5},
+        'Horizontal Grip': {'Mod Components': 2, 'Duct Tape': 5},
+        'Lightweight Stock': {'Mod Components': 2, 'Duct Tape': 5},
+        'Muzzle Brake I': {'Metal Parts': 6, 'Wires': 1},
+        'Muzzle Brake II': {'Mechanical Components': 2, 'Wires': 4},
+        'Muzzle Brake III': {'Mod Components': 2, 'Wires': 8},
+        'Padded Stock': {'Mod Components': 2, 'Duct Tape': 5},
+        'Shotgun Choke I': {'Metal Parts': 6, 'Wires': 1},
+        'Shotgun Choke II': {'Mechanical Components': 2, 'Wires': 4},
+        'Shotgun Choke III': {'Mod Components': 2, 'Wires': 8},
+        'Shotgun Silencer': {'Mod Components': 2, 'Wires': 8},
+        'Silencer I': {'Mechanical Components': 2, 'Wires': 4},
+        'Silencer II': {'Mod Components': 2, 'Wires': 8},
+        'Stable Stock I': {'Rubber Parts': 6, 'Duct Tape': 1},
+        'Stable Stock II': {'Mechanical Components': 2, 'Duct Tape': 3},
+        'Stable Stock III': {'Mod Components': 2, 'Duct Tape': 5},
+        'Vertical Grip I': {'Plastic Parts': 6, 'Duct Tape': 1},
+        'Vertical Grip II': {'Mechanical Components': 2, 'Duct Tape': 3},
+        'Vertical Grip III': {'Mod Components': 2, 'Duct Tape': 5}
+    },
+    'Weapons': {
+        'Anvil': {'Mechanical Components': 5, 'Simple Gun Parts': 6},
+        'Aphelion': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Matriarch Reactor': 1},
+        'Arpeggio': {'Mechanical Components': 6, 'Simple Gun Parts': 6},
+        'Bettina': {'Advanced Mechanical Components': 3, 'Heavy Gun Parts': 3, 'Canister': 3},
+        'Bobcat': {'Magnetic Accelerator': 1, 'Light Gun Parts': 3, 'Exodus Modules': 2},
+        'Burletta': {'Mechanical Components': 3, 'Simple Gun Parts': 3},
+        'Equalizer': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Queen Reactor': 1},
+        'Ferro': {'Metal Parts': 5, 'Rubber Parts': 2},
+        'Hairpin': {'Metal Parts': 2, 'Plastic Parts': 5},
+        'Hullcracker': {'Magnetic Accelerator': 1, 'Heavy Gun Parts': 3, 'Exodus Modules': 1},
+        'Il Toro': {'Mechanical Components': 5, 'Simple Gun Parts': 6},
+        'Jupiter': {'Magnetic Accelerator': 3, 'Complex Gun Parts': 3, 'Queen Reactor': 1},
+        'Kettle': {'Metal Parts': 6, 'Rubber Parts': 8},
+        'Osprey': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Wires': 7},
+        'Rattler': {'Metal Parts': 16, 'Rubber Parts': 12},
+        'Renegade': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Oil': 5},
+        'Stitcher': {'Metal Parts': 8, 'Rubber Parts': 4},
+        'Tempest': {'Magnetic Accelerator': 1, 'Medium Gun Parts': 3, 'Exodus Modules': 2},
+        'Torrente': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Steel Spring': 6},
+        'Venator': {'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3, 'Magnet': 5},
+        'Vulcano': {'Magnetic Accelerator': 1, 'Heavy Gun Parts': 3, 'Exodus Modules': 1}
     }
 };
 
 const WEAPON_UPGRADES = {
-    'Ferro': { 2: { 'Metal Parts': 7 }, 3: { 'Metal Parts': 9, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 } },
-    'Hairpin': { 2: { 'Metal Parts': 8 }, 3: { 'Metal Parts': 6, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 } },
-    'Kettle': { 2: { 'Metal Parts': 8, 'Plastic Parts': 10 }, 3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 } },
-    'Stitcher': { 2: { 'Metal Parts': 8, 'Rubber Parts': 12 }, 3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 } },
-    'Rattler': { 2: { 'Metal Parts': 10, 'Rubber Parts': 10 }, 3: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 } },
-    'Anvil': { 2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }, 3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }, 4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 } },
-    'Arpeggio': { 2: { 'Mechanical Components': 4, 'Simple Gun Parts': 1 }, 3: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 }, 4: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 } },
-    'Burletta': { 2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }, 3: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }, 4: { 'Mechanical Components': 4, 'Simple Gun Parts': 1 } },
-    'Il Toro': { 2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }, 3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }, 4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 } },
-    'Torrente': { 2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 } },
-    'Osprey': { 2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 } },
-    'Venator': { 2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 } },
-    'Renegade': { 2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 }, 4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 } },
-    'Bettina': { 2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 }, 4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 2 } },
-    'Tempest': { 2: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 1 }, 3: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 }, 4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 } },
-    'Bobcat': { 2: { 'Advanced Mechanical Components': 1, 'Light Gun Parts': 1 }, 3: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 }, 4: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 } },
-    'Vulcano': { 2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 1 }, 3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 }, 4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 } },
-    'Hullcracker': { 2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 }, 3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 }, 4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 } }
+    'Anvil': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }
+    },
+    'Arpeggio': {
+        2: { 'Mechanical Components': 4, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 },
+        4: { 'Mechanical Components': 5, 'Medium Gun Parts': 1 }
+    },
+    'Bettina': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 2 }
+    },
+    'Bobcat': {
+        2: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 1 },
+        3: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 },
+        4: { 'Advanced Mechanical Components': 2, 'Light Gun Parts': 3 }
+    },
+    'Burletta': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Light Gun Parts': 1 }
+    },
+    'Ferro': {
+        2: { 'Metal Parts': 7 },
+        3: { 'Metal Parts': 9, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 }
+    },
+    'Hairpin': {
+        2: { 'Metal Parts': 8 },
+        3: { 'Metal Parts': 9, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 1, 'Simple Gun Parts': 1 }
+    },
+    'Hullcracker': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 }
+    },
+    'Il Toro': {
+        2: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        3: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 },
+        4: { 'Mechanical Components': 4, 'Heavy Gun Parts': 1 }
+    },
+    'Kettle': {
+        2: { 'Metal Parts': 8, 'Plastic Parts': 10 },
+        3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Osprey': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Rattler': {
+        2: { 'Metal Parts': 10, 'Rubber Parts': 10 },
+        3: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Renegade': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Stitcher': {
+        2: { 'Metal Parts': 8, 'Rubber Parts': 12 },
+        3: { 'Metal Parts': 10, 'Simple Gun Parts': 1 },
+        4: { 'Mechanical Components': 3, 'Simple Gun Parts': 1 }
+    },
+    'Tempest': {
+        2: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 1 },
+        3: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 3 }
+    },
+    'Torrente': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Venator': {
+        2: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 1, 'Medium Gun Parts': 2 },
+        4: { 'Advanced Mechanical Components': 2, 'Medium Gun Parts': 2 }
+    },
+    'Vulcano': {
+        2: { 'Advanced Mechanical Components': 1, 'Heavy Gun Parts': 2 },
+        3: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 1 },
+        4: { 'Advanced Mechanical Components': 2, 'Heavy Gun Parts': 3 }
+    }
 };
 
 const RECYCLE_DB = {
