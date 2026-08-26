@@ -1,4 +1,4 @@
-const CACHE = "setnja-v2";
+const CACHE = "setnja-v4";
 const BASE = new URL("./", self.location.href).href;
 const SHELL = [BASE, BASE + "index.html", BASE + "manifest.webmanifest", BASE + "icon.jpg"];
 
