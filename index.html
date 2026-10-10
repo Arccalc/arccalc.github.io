@@ -6,52 +6,82 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ARC Raiders // Advanced Resource Calculator</title>
 
+    <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="favicon.png">
-
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Share+Tech+Mono&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-
-    <script type="text/javascript">
-        (function (m, e, t, r, i, k, a) {
-            m[i] = m[i] || function () { (m[i].a = m[i].a || []).push(arguments) };
-            m[i].l = 1 * new Date();
-            for (var j = 0; j < document.scripts.length; j++) { if (document.scripts[j].src === r) { return; } }
-            k = e.createElement(t), a = e.getElementsByTagName(t)[0], k.async = 1, k.src = r, a.parentNode.insertBefore(k, a)
-        })(window, document, 'script', 'https://mc.yandex.ru/metrika/tag.js?id=106994566', 'ym');
-
-        ym(106994566, 'init', { ssr: true, webvisor: true, clickmap: true, ecommerce: "dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce: true, trackLinks: true });
-    </script>
-    <noscript>
-        <div><img src="https://mc.yandex.ru/watch/106994566" style="position:absolute; left:-9999px;" alt="" /></div>
-    </noscript>
+    <link rel="stylesheet" href="style.css?v=45">
 </head>
 
 <body>
 
-    <a href='https://ko-fi.com/U7U21PU1TF' target='_blank' class="kofi-widget kofi-desktop" aria-label="Support via Ko-fi">
-        <img src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' alt='Buy Me a Coffee' />
-    </a>
+    <div class="tour-anchor tour-anchor-desktop">
+        <a href='https://ko-fi.com/U7U21PU1TF' target='_blank' class="kofi-widget kofi-desktop" aria-label="Support via Ko-fi">
+            <img src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' alt='Buy Me a Coffee' />
+        </a>
+        <button type="button" class="tour-open-btn" data-i18n="tourHow">How to use</button>
+        <a class="tour-open-btn tour-download-btn" data-i18n="tourDownload" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener">Download StashSync</a>
+        <div id="tour-nudge" class="tour-nudge" hidden>
+            <p data-i18n="tourNudge">New here? A short tour shows how to start (1 minute).</p>
+            <div class="tour-nudge-actions">
+                <button type="button" id="tour-nudge-show" data-i18n="tourNudgeShow">Show</button>
+                <button type="button" id="tour-nudge-hide" data-i18n="tourNudgeHide">No thanks</button>
+            </div>
+        </div>
+        <div id="tour-menu" class="tour-menu" hidden role="dialog" aria-labelledby="tour-menu-title">
+            <div class="tour-menu-head">
+                <p id="tour-menu-title" data-i18n="tourHow">How to use</p>
+                <button type="button" class="tour-menu-x" data-i18n-aria="tourMenuClose" aria-label="Close">×</button>
+            </div>
+            <button type="button" data-tour-go="start">
+                <span class="tour-menu-name" data-i18n="tourStartTitle">How to start</span>
+                <span class="tour-menu-desc" data-i18n="tourStartDesc">Where to begin</span>
+            </button>
+            <button type="button" data-tour-go="loadouts">
+                <span class="tour-menu-name" data-i18n="tourLoadTitle">Loadouts</span>
+                <span class="tour-menu-desc" data-i18n="tourLoadDesc">Save a set of gear</span>
+            </button>
+            <button type="button" data-tour-go="recycler">
+                <span class="tour-menu-name" data-i18n="tourRecTitle">Recycler</span>
+                <span class="tour-menu-desc" data-i18n="tourRecDesc">What a material comes from</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="lang-switcher lang-desktop" data-i18n-title="langLabel" title="Language">
+        <label for="lang-select" class="lang-label" data-i18n="langLabel">Language</label>
+        <select id="lang-select" data-i18n-aria="langLabel" aria-label="Language">
+            <option value="en">English</option>
+            <option value="ru">Русский</option>
+            <option value="de">Deutsch</option>
+            <option value="fr">Français</option>
+        </select>
+    </div>
 
     <div class="container">
-        <h1 class="main-title">ARC Raiders // Advanced Resource Calculator</h1>
+        <h1 class="main-title" data-i18n="mainTitle">ARC Raiders // Advanced Resource Calculator</h1>
 
         <div class="panel" id="input-panel">
             <div class="panel-header">
-                <h2 class="panel-title">Data Input</h2>
-                <a href='https://ko-fi.com/U7U21PU1TF' target='_blank' class="kofi-widget kofi-mobile" aria-label="Support via Ko-fi">
-                    <img src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' alt='Buy Me a Coffee' />
-                </a>
+                <h2 class="panel-title" data-i18n="dataInput">Data Input</h2>
+                <div class="panel-header-tools">
+                    <div class="tour-anchor tour-anchor-mobile">
+                        <a href='https://ko-fi.com/U7U21PU1TF' target='_blank' class="kofi-widget kofi-mobile" aria-label="Support via Ko-fi">
+                            <img src='https://storage.ko-fi.com/cdn/kofi6.png?v=6' alt='Buy Me a Coffee' />
+                        </a>
+                        <button type="button" class="tour-open-btn" data-i18n="tourHow">How to use</button>
+                        <a class="tour-open-btn tour-download-btn" data-i18n="tourDownload" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener">Download StashSync</a>
+                    </div>
+                    <span id="auto-sync-status" class="sync-status offline" data-i18n="autoSyncOffline" data-tour="sync-badge">Auto Sync: Offline</span>
+                </div>
             </div>
 
-            <input type="text" id="search-input" placeholder="Search item or resource...">
-            <button id="reset-button" aria-label="Reset all crafting, inventory and loadouts.">RESET ALL
+            <input type="text" id="search-input" data-tour="goals-search" data-i18n-placeholder="searchPlaceholder" placeholder="Search item or resource...">
+            <button id="reset-button" data-i18n="resetAll" data-i18n-aria="resetAllAria" aria-label="Reset all crafting, inventory and loadouts.">RESET ALL
                 CRAFTING</button>
 
             <div class="tabs">
-                <button class="tab-btn active" data-tab="craft-goals">Crafting Goals</button>
-                <button class="tab-btn" data-tab="loadouts">Loadouts</button>
-                <button class="tab-btn" data-tab="inventory-input">My Inventory</button>
+                <button class="tab-btn active" data-tab="craft-goals" data-tour="tab-goals" data-i18n="tabGoals">Crafting Goals</button>
+                <button class="tab-btn" data-tab="loadouts" data-tour="tab-loadouts" data-i18n="tabLoadouts">Loadouts</button>
+                <button class="tab-btn" data-tab="inventory-input" data-tour="tab-inventory" data-i18n="tabInventory">My Inventory</button>
             </div>
 
             <div class="panel-content">
@@ -61,22 +91,22 @@
 
                 <div id="loadouts" class="tab-content">
                     <div id="saved-loadouts-container">
-                        <h4 class="section-label">SAVED LOADOUTS</h4>
-                        <div id="saved-loadouts-list" class="saved-list">
-                            <div class="empty-state-small">No saved loadouts yet.</div>
+                        <h4 class="section-label" data-i18n="savedLoadouts">SAVED LOADOUTS</h4>
+                        <div id="saved-loadouts-list" class="saved-list" data-tour="loadout-list">
+                            <div class="empty-state-small" data-i18n="noSavedLoadouts">No saved loadouts yet.</div>
                         </div>
                     </div>
 
                     <div class="loadout-controls-wrapper compact-toolbar">
                         <div class="toolbar-group main">
-                            <input type="text" id="loadout-name-input" placeholder="Loadout Name (e.g. Eco Run)"
+                            <input type="text" id="loadout-name-input" data-tour="loadout-name" data-i18n-placeholder="loadoutNamePh" placeholder="Loadout Name (e.g. Eco Run)"
                                 class="loadout-input">
                         </div>
 
                         <div class="toolbar-group actions">
                             <div class="multiplier-wrapper-compact">
-                                <span class="mult-label">QTY:</span>
-                                <div class="qty-stepper">
+                                <span class="mult-label" data-i18n="qty">QTY:</span>
+                                <div class="qty-stepper" data-tour="loadout-qty">
                                     <button id="loadout-dec" class="stepper-btn">−</button>
                                     <input type="number" id="loadout-multiplier" value="1" min="1"
                                         class="loadout-input-number">
@@ -84,40 +114,41 @@
                                 </div>
                             </div>
 
-                            <button id="save-loadout-btn" class="action-btn primary">SAVE</button>
+                            <button id="save-loadout-btn" class="action-btn primary" data-tour="loadout-save" data-i18n="save">SAVE</button>
 
-                            <button id="clear-loadout-btn" class="icon-btn-danger" title="Clear Current Loadout">
+                            <button id="clear-loadout-btn" class="icon-btn-danger" data-i18n-title="clearLoadout" title="Clear Current Loadout">
                                 🗑️
                             </button>
                         </div>
                     </div>
 
-                    <div class="loadout-ui">
+                    <div class="loadout-ui" data-tour="loadout-slots">
                         <div class="loadout-section">
-                            <h4 class="section-label">EQUIPMENT</h4>
+                            <h4 class="section-label" data-i18n="equipment">EQUIPMENT</h4>
                             <div class="loadout-row equipment-row">
                                 <div class="loadout-slot" data-slot="gear" data-filter="Gear Sets">
-                                    <div class="slot-placeholder">Amplifier</div>
+                                    <div class="slot-placeholder" data-i18n="slotAmplifier">Augment</div>
                                 </div>
                                 <div class="loadout-slot" data-slot="shield" data-filter="Shields">
-                                    <div class="slot-placeholder">Shield</div>
+                                    <div class="slot-placeholder" data-i18n="slotShield">Shield</div>
                                 </div>
                                 <div class="loadout-slot weapon-slot" data-slot="primary" data-filter="Weapons">
-                                    <div class="slot-placeholder">Primary</div>
+                                    <div class="slot-placeholder" data-i18n="slotPrimary">Primary</div>
                                 </div>
                                 <div class="loadout-slot weapon-slot" data-slot="secondary" data-filter="Weapons">
-                                    <div class="slot-placeholder">Secondary</div>
+                                    <div class="slot-placeholder" data-i18n="slotSecondary">Secondary</div>
                                 </div>
                             </div>
+                            <div id="loadout-amp" class="amp-loadout"></div>
                         </div>
 
                         <div class="loadout-section">
-                            <h4 class="section-label" id="backpack-label">BACKPACK</h4>
+                            <h4 class="section-label" id="backpack-label" data-i18n="backpack">BACKPACK</h4>
                             <div class="backpack-grid" id="backpack-grid"></div>
                         </div>
 
                         <div class="loadout-section">
-                            <h4 class="section-label">POCKETS & UTILITY</h4>
+                            <h4 class="section-label" data-i18n="pockets">POCKETS & UTILITY</h4>
                             <div class="loadout-row pockets-row">
                                 <div id="quick-use-grid" class="flex-group"></div>
                                 <div id="dynamic-utility-container" class="flex-group"></div>
@@ -129,16 +160,14 @@
 
                 <div id="inventory-input" class="tab-content">
                     <div class="inventory-net-worth-card">
-                        <span class="net-worth-label">TOTAL INVENTORY VALUE</span>
+                        <span class="net-worth-label" data-i18n="totalInvValue">TOTAL INVENTORY VALUE</span>
                         <div id="total-net-worth" class="net-worth-amount">0 ©</div>
                     </div>
 
-                    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
-                        <button id="reset-inventory-btn" style="margin-bottom: 0; flex: 1;">RESET INVENTORY
-                            ONLY</button>
-                        <button id="filter-hide-empty" class="inv-filter-btn" title="Hide Empty">🧹</button>
-                        <button id="filter-show-required" class="inv-filter-btn" title="Needed for Craft">🛠️</button>
-                        <button id="filter-show-recycle" class="inv-filter-btn" title="Scrap for Mats">♻️</button>
+                    <div style="display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap;">
+                        <button id="reset-inventory-btn" style="margin-bottom: 0; flex: 1; min-width: 120px;" data-i18n="resetInv">RESET INVENTORY ONLY</button>
+                        <button id="filter-hide-empty" class="inv-filter-btn" data-i18n-title="filterHideEmpty" title="Hide Empty">🧹</button>
+                        <button id="filter-show-required" class="inv-filter-btn" data-i18n-title="filterNeeded" title="Needed for Craft">🛠️</button>
                     </div>
 
                     <div id="inventory-container"></div>
@@ -147,113 +176,61 @@
         </div>
 
         <div class="panel" id="output-panel">
-            <h2 class="panel-title">Analysis & Data</h2>
+            <h2 class="panel-title" data-i18n="analysis">Analysis & Data</h2>
 
             <div class="tabs" style="margin-bottom: 15px;">
-                <button class="out-tab-btn active" data-tab="output-totals">Totals</button>
-                <button class="out-tab-btn" data-tab="output-scrapper">Recycler</button>
+                <button class="out-tab-btn active" data-tab="output-totals" data-tour="tab-totals" data-i18n="totals">Totals</button>
+                <button class="out-tab-btn" data-tab="output-scrapper" data-tour="tab-recycler" data-i18n="recycler">Recycler</button>
             </div>
 
             <div class="panel-header-wrapper"
                 style="display: flex; justify-content: flex-end; align-items: center; border-bottom: 1px solid var(--color-neon-blue); margin-bottom: 15px; padding-bottom: 8px;">
-                <button id="export-btn" class="icon-btn" data-action="export-csv" title="Export to CSV">📥 CSV</button>
+                <button id="export-btn" class="icon-btn" data-action="export-csv" data-i18n-title="exportCsv" title="Export to CSV">📥 CSV</button>
             </div>
 
             <div class="panel-content">
 
                 <div id="output-totals" class="out-tab-content active">
-                    <h2 class="panel-title total-header"
-                        style="border: none; margin: 0; padding: 0; margin-bottom: 10px;">Total Base Resources</h2>
+                    <div class="total-head-row">
+                        <h2 class="panel-title total-header"
+                            style="border: none; margin: 0; padding: 0;" data-i18n="totalBase">Total Base Resources</h2>
+                    </div>
+                    <div class="stock-ahead-row" data-tour="stock-toggle">
+                        <label class="stock-ahead" for="stock-ahead-toggle">
+                            <input type="checkbox" id="stock-ahead-toggle">
+                            <span data-i18n="stockAhead">Stocking up</span>
+                        </label>
+                        <p class="stock-ahead-note" id="stock-ahead-note"></p>
+                    </div>
 
-                    <div class="interaction-tip">💡 Tip: Click on any resource below to see what items you can scrap to
-                        get it</div>
-
-                    <ul id="base-total-list">
-                        <div class="empty-state">Select items...</div>
-                    </ul>
-
-                    <h2 class="panel-title accordion-title collapsed" data-target="craft-total-content"
-                        style="margin-top: 15px;">Ingredients <span class="toggle-icon">▶</span></h2>
-                    <div id="craft-total-content" class="accordion-content collapsed">
-                        <div class="accordion-content-inner">
-                            <ul id="craft-total-list"></ul>
+                    <div class="resource-tip-wrap">
+                        <div class="interaction-tip resource-tip" id="resource-tip">
+                            <span class="resource-tip-text" data-i18n="tipClickResource">Click an item to add it to "Recycler" and see what it can be recycled from</span>
                         </div>
                     </div>
 
-                    <h2 class="panel-title accordion-title collapsed" data-target="recipe-breakdown-content">Recipe
+                    <ul id="base-total-list">
+                        <div class="empty-state" data-i18n="selectItems">Choose a craft goal on the left</div>
+                    </ul>
+
+                    <h2 class="panel-title accordion-title collapsed" data-target="recipe-breakdown-content" data-i18n-acc="recipeBreakdown" data-tour="totals-recipe">Recipe
                         Breakdown <span class="toggle-icon">▶</span></h2>
-                    <div id="recipe-breakdown-content" class="accordion-content collapsed">
+                    <div id="recipe-breakdown-content" class="accordion-content collapsed" data-tour="totals-recipe-body">
                         <div class="accordion-content-inner">
                             <ul id="recipe-breakdown-list"></ul>
                         </div>
                     </div>
                 </div>
 
-                <div id="output-scrapper" class="out-tab-content" style="display: none;">
-
-                    <div class="scrapper-block" style="margin-bottom: 25px;">
-                        <h3
-                            style="color: var(--color-neon-blue); margin-bottom: 10px; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                            💡 Smart Suggestions
-                        </h3>
-                        <div id="smart-suggestions-list"
-                            style="background: rgba(0, 243, 255, 0.05); border: 1px solid var(--color-neon-blue); padding: 10px; border-radius: 4px;">
-                            <div class="empty-state-small" style="color: var(--color-text-dim);">No missing resources or
-                                no scrap available.</div>
-                        </div>
+                <div id="output-scrapper" class="out-tab-content">
+                    <div class="recycler-search">
+                        <input type="search" id="recycler-search" data-tour="recycler-search" class="recycler-search-input" autocomplete="off"
+                            data-i18n-placeholder="recycleSearch" data-i18n-aria="recycleSearchLabel"
+                            placeholder="Find a material…" aria-label="Find a material">
+                        <div id="recycler-suggest" class="recycler-suggest" hidden></div>
                     </div>
-
-                    <div class="scrapper-block">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                            <h3 style="color: var(--color-highlight-yellow); font-size: 1.1rem;">🔨 Manual Scrapper</h3>
-                            <button id="dismantle-btn"
-                                style="padding: 6px 12px; font-size: 0.8rem; background: transparent; border: 1px solid var(--color-highlight-yellow); color: var(--color-highlight-yellow); cursor: pointer; transition: 0.2s;"
-                                disabled>
-                                Dismantle Selected
-                            </button>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                            <div>
-                                <h4
-                                    style="font-size: 0.9rem; margin-bottom: 8px; border-bottom: 1px solid var(--color-text-dim); padding-bottom: 4px; color: #fff;">
-                                    Select Junk</h4>
-                                <div id="scrapper-inventory-list"
-                                    style="max-height: 350px; overflow-y: auto; border: 1px solid #333; padding: 5px; background: rgba(0,0,0,0.3);">
-                                    <div class="empty-state-small">Inventory is empty.</div>
-                                </div>
-                            </div>
-
-                            <div>
-                                <h4
-                                    style="font-size: 0.9rem; margin-bottom: 8px; border-bottom: 1px solid var(--color-text-dim); padding-bottom: 4px; color: #fff;">
-                                    Expected Yield</h4>
-                                <ul id="scrapper-yield-list"
-                                    style="list-style: none; padding: 0; margin: 0; border: 1px solid #333; padding: 5px; min-height: 50px; background: rgba(0,0,0,0.3);">
-                                    <div class="empty-state-small">Select items...</div>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="scrapper-block" id="reverse-lookup-container" style="display: none; margin-top: 25px;">
-                        <div
-                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <h3
-                                style="color: var(--color-neon-blue); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-                                🔍 Where to find
-                            </h3>
-                            <button id="clear-lookup-btn"
-                                style="padding: 4px 8px; font-size: 0.75rem; background: transparent; border: 1px solid var(--color-text-dim); color: var(--color-text-dim); cursor: pointer; border-radius: 3px; transition: 0.2s;">
-                                Clear List
-                            </button>
-                        </div>
-                        <div id="reverse-lookup-list" style="display: flex; flex-direction: column; gap: 8px;">
-                            <div class="empty-state-text" id="lookup-empty-state">Select a resource from your Needs or
-                                Inventory to see which items can be dismantled into it.</div>
-                        </div>
-                    </div>
+                    <p class="resource-subtitle" data-i18n="recycleHint">Items that can be recycled into each material.</p>
+                    <div id="recycler-cards" class="recycler-cards"></div>
                 </div>
             </div>
         </div>
@@ -262,15 +239,20 @@
     <div id="item-selector-modal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Select Item</h3><button id="close-modal-btn">×</button>
+                <h3 data-i18n="selectItem">Select Item</h3><button id="close-modal-btn">×</button>
             </div>
-            <input type="text" id="modal-search" placeholder="Search...">
+            <input type="text" id="modal-search" data-i18n-placeholder="modalSearch" placeholder="Search...">
             <div id="modal-items-list" class="modal-list"></div>
         </div>
     </div>
 
-    <script src="items.js"></script>
-    <script src="script.js?v=2"></script>
+    <script src="items.js?v=6"></script>
+    <script src="i18n_items.js?v=2"></script>
+    <script src="i18n.js?v=32"></script>
+    <script src="amplify.js?v=2"></script>
+    <script src="script.js?v=39"></script>
+    <link rel="stylesheet" href="tour.css?v=3">
+    <script src="tour.js?v=11"></script>
 </body>
 
 </html>

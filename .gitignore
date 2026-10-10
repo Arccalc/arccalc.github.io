@@ -1,0 +1,32 @@
+# Dependencies and build output
+node_modules/
+**/target/
+*.pdb
+
+# Backups, dumps, and local notes (not the site)
+*.bak
+*.bak-*
+*.log
+raw_inventory.js
+raw_inventory.json
+sync-key.log
+sync-once-result.txt
+stash-probe.txt
+embark-session.json
+embark-session.json.tmp
+backup-*/
+qa-artifacts/
+qa-report-*/
+fix-screenshots/
+_backup_need_rows/
+scratch/
+Screenshot_*.png
+
+# OS and editors
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+__pycache__/
+*.pyc
