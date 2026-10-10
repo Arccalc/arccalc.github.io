@@ -110,6 +110,30 @@ h1.main-title {
     letter-spacing: 4px;
 }
 
+.source-link-row {
+    grid-column: 1 / -1;
+    margin: -8px 0 14px;
+    text-align: center;
+}
+
+.source-link {
+    color: var(--color-text-dim);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.4px;
+    text-decoration: none;
+}
+
+.source-link:hover {
+    color: var(--color-neon-blue);
+}
+
+.source-link:focus-visible {
+    color: var(--color-neon-blue);
+    outline: 1px solid var(--color-neon-blue);
+    outline-offset: 3px;
+}
+
 /* Выбор языка: зеркально Support Dev — fixed справа сверху (Support слева сверху) */
 .lang-switcher {
     display: flex;

@@ -9,6 +9,8 @@ const SUPPORTED_LANGS = ['en', 'ru', 'de', 'fr'];
 const UI_I18N = {
     en: {
         mainTitle: 'ARC Raiders // Advanced Resource Calculator',
+        sourceLink: 'GitHub',
+        sourceLinkTitle: 'Source code of this page',
         dataInput: 'Data Input',
         searchPlaceholder: 'Search item or resource...',
         resetAll: 'RESET ALL CRAFTING',
@@ -179,6 +181,8 @@ const UI_I18N = {
     },
     ru: {
         mainTitle: 'ARC Raiders // Калькулятор ресурсов',
+        sourceLink: 'GitHub',
+        sourceLinkTitle: 'Исходный код этой страницы',
         dataInput: 'Ввод данных',
         searchPlaceholder: 'Поиск предмета или ресурса...',
         resetAll: 'СБРОС ВСЕГО КРАФТА',
@@ -349,6 +353,8 @@ const UI_I18N = {
     },
     de: {
         mainTitle: 'ARC Raiders // Ressourcenrechner',
+        sourceLink: 'GitHub',
+        sourceLinkTitle: 'Quelltext dieser Seite',
         dataInput: 'Dateneingabe',
         searchPlaceholder: 'Gegenstand oder Ressource suchen...',
         resetAll: 'ALLES ZURÜCKSETZEN',
@@ -519,6 +525,8 @@ const UI_I18N = {
     },
     fr: {
         mainTitle: 'ARC Raiders // Calculateur de ressources',
+        sourceLink: 'GitHub',
+        sourceLinkTitle: 'Code source de cette page',
         dataInput: 'Saisie des données',
         searchPlaceholder: 'Rechercher un objet ou une ressource...',
         resetAll: 'TOUT RÉINITIALISER',
