@@ -1,75 +1,105 @@
-### ARC Raiders // Advanced Resource Calculator
-A tool for crafting calculations and efficient resource management.
+# ARC Raiders // Advanced Resource Calculator
+
+A tool for crafting calculations and efficient resource management. Free, no ads, no account.
+
+🌐 **Live site:** https://arccalc.github.io
+
+> Unofficial community project. Not affiliated with or endorsed by Embark Studios. ARC Raiders is a trademark of Embark Studios.
 
 ## 🌌 About the Project
-ARC Raiders // Advanced Resource Calculator is an interactive web tool designed to simplify the crafting process. In a game where stash space is your most limited resource, this tool helps you prioritize exactly what to bring back from a raid.
 
-The calculator automatically computes the total amount of raw (base) materials needed for complex gear and compares it against your current inventory. It ensures you only gather what you truly need, helping you plan for future crafting goals or your next raid with surgical precision.
+ARC Raiders // Advanced Resource Calculator is an interactive web tool that takes the pain out of stash and crafting management. In a game where stash space is your most limited resource, it helps you decide exactly what to bring back from a raid and plan your next raid before you drop in.
 
-## ✨ Key Features
-The Recycler (Smart Suggestions): New in v1.1. Automatically scans your stash and suggests which items can be dismantled to finish your current crafting goals.
+It breaks every recipe down through all its layers into raw (base) materials, compares the total against your inventory, and shows how many you need and how many you already have. Everything is saved locally in your browser, so your inventory, goals and loadouts are there when you come back.
 
-Loadout Presets: New in v1.1. Build and save specific raid kits (gear/meds/ammo) to see their cost separately from your long-term objectives.
+## ✨ Key Features (V2.0)
 
-Recursive Recipe Breakdown: Breaks down complex items into multiple layers of base raw materials.
+- **Recursive Recipe Breakdown:** breaks complex items into multiple layers of base materials, with an expandable tree of intermediate parts.
+- **[StashSync](https://github.com/Arccalc/StashSync) (optional, Windows):** a small companion app that reads your own stash and your equipped loadout and sends them to the calculator. See [details below](#-stashsync-optional-windows).
+- **Rebuilt interface:** clearer totals, crafting goals, inventory and loadouts. Every material shows what you need and what you have, color-coded: red means none, orange means some, green means covered.
+- **Frozen Trail data:** the new gear, materials, keys and blueprints (Bantam, Stiletto, Yank Grenade, Grappling Hook, Tether Launcher, the cameras, the Pendola Pass keys and more), with updated sell prices and recycle results.
+- **Gun amplification:** for weapons with an upgrade tree, the cost to install a perk is added to the material totals. One-time research stays in the recipe breakdown and is not charged again for every copy of the gun.
+- **Recycler:** search a material, or click one in the totals, to see which items can be broken down into it. It does not change your inventory.
+- **Loadouts:** build and save raid kits, see their cost separately from your long-term goals, and sync with the gear you have equipped.
+- **Stocking up:** a switch that shows full amounts (including what you already own) or only what is still missing. The CSV export follows the same switch.
+- **Four languages:** English, Russian, German and French. Item names follow the language you pick.
+- **Built-in manuals:** a "How to use" button opens short guided walkthroughs for your first craft, loadouts and the Recycler.
+- **Stash value and CSV export:** see the total credit (©) value of your inventory and export your shopping list.
 
-Inventory Tracking & Stash Value: Save your current counts (localStorage) and see the total Credit (©) value of your entire hoard.
+## 📥 StashSync (optional, Windows)
 
-Hierarchical Tree View: Interactive breakdown of all intermediate materials and their components.
+StashSync reads your own ARC Raiders stash and equipped loadout and fills the calculator for you, so you don't have to type your inventory by hand. The calculator works fine without it.
 
-Neon UI: High-contrast, sci-fi interface inspired by the aesthetic of ARC Raiders.
-
-## 🛠️ Technologies
-The project is built using a minimalist, high-performance stack:
-
-HTML5: Web page structure.
-
-CSS3: Custom neon, responsive design (using CSS Variables).
-
-JavaScript (Vanilla JS): Pure logic for recursive calculations, state management, and real-time DOM updates. No frameworks, no lag.
+- Windows and the Steam edition of the game only.
+- Unofficial, not affiliated with Embark. It only reads your own stash and sends item counts only to your own browser on your PC.
+- Download, source and details: [github.com/Arccalc/StashSync](https://github.com/Arccalc/StashSync)
 
 ## 🌐 How to Use
 
-### 📌 1) Set Crafting Goals
-Choose your target weapons or gear in the Crafting Goals panel. Adjust quantities to see the total material requirements update instantly.
+The page also has a built-in manual under the **How to use** button.
 
-### 📦 2) Enter Your Inventory
-Enter your resource counts in the "My Inventory" tab. You can add items by Stacks (📦) or Single Units (🧩) to match your in-game view.
+**1) Set crafting goals.** Pick your target weapons or gear in the Crafting Goals panel and adjust quantities. The totals update instantly.
 
-### 📊 3) Check Total Resource Requirements
-If you are missing resources, check the Recycler list. It shows which items in your inventory can be dismantled to produce the missing materials.
+**2) Enter your inventory.** Fill in the "My Inventory" tab by hand (by stacks or single units, to match your in-game view), or let StashSync do it.
 
-### 🔍 4) See Detailed Crafting Breakdown
-Use the Loadouts feature to calculate the cost of your signature raid kits. Use the multiplier to see the cost for 5x or 10x backup sets.
+**3) Read the totals.** Check what you still need. Red is missing, orange is partial, green is covered. Turn "Stocking up" on to see full amounts.
 
----
+**4) Use the Recycler.** Click a material in the totals, or search for it, to see which items can be broken down into it.
 
-### 🧠 Why This Is Useful
-This tool is essential for maximizing raid efficiency, optimizing stash space, and managing complex multi-level crafting chains without the headache of manual math.
+**5) Save loadouts.** Build your signature raid kits and see their cost, or save the gear you currently have equipped as a preset.
 
-## ⚙️ Installation and Setup
-The project is a standalone HTML file, making it easy to deploy.
+## 🧠 Why This Is Useful
 
-For Local Launch
-Clone the repository:
+It helps you maximize raid efficiency, optimize stash space and manage multi-level crafting chains without the headache of manual math.
 
-## Bash
-```
+## 🛠️ Technologies
+
+A minimalist, high-performance stack:
+
+- **HTML5:** page structure.
+- **CSS3:** custom neon, responsive design (CSS variables).
+- **JavaScript (vanilla):** recursive calculations, state management, translations and real-time DOM updates. No frameworks, no build step.
+
+## ⚙️ Run Locally
+
+```bash
 git clone https://github.com/Arccalc/arccalc.github.io
 cd arccalc.github.io
 ```
-Ensure you have all the files (specifically index.html and the img folder with icons).
 
-Open the index.html file in your favorite web browser.
+Open `index.html` in your browser, or serve the folder with any static server (for example `python -m http.server`).
 
-🌐 Live Demo: Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io
+Note: by default StashSync only accepts connections from `https://arccalc.github.io`. To use it with a local copy, see the `--allow-origin` option in the StashSync README.
 
-## Folder Structure
+### Folder structure
 
 ```
-├── img/ # Folder with icons for resources and items
-
-├── index.html # Main calculator file (contains HTML/CSS/JS)
-
-└── README.md # This file
+├── img/            # Icons for resources and items
+├── fonts/          # Local fonts
+├── index.html      # Main page
+├── script.js       # Calculator logic
+├── style.css       # Styles
+├── i18n.js         # Interface translations
+├── i18n_items.js   # Item name translations
+├── items.js        # Item and recipe data
+├── amplify.js      # Amplification perk data
+├── tour.js         # Built-in manual (guided tours)
+├── tour.css        # Manual styles
+└── README.md       # This file
 ```
+
+## 🗺️ Roadmap
+
+- Overlay tracker: shows on screen which resources you still need to find and updates as you find them.
+- More languages.
+- Continued design and interface improvements.
+- New tools such as a quest tracker and item locations.
+
+## 🙏 Data and Credits
+
+- Amplification research data: arctracker.io.
+- Game content, names and images belong to Embark Studios.
+
+## 💬 Feedback
+
+Bug reports and ideas are very welcome. Open an [issue](https://github.com/Arccalc/arccalc.github.io/issues) or leave a comment on the Reddit thread.
