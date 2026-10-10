@@ -1,48 +1,75 @@
 ### ARC Raiders // Advanced Resource Calculator
+A tool for crafting calculations and efficient resource management.
 
-A crafting calculator for ARC Raiders. It turns a goal, a loadout, and the stash you already have into a clear list of what is still missing.
+## 🌌 About the Project
+ARC Raiders // Advanced Resource Calculator is an interactive web tool designed to simplify the crafting process. In a game where stash space is your most limited resource, this tool helps you prioritize exactly what to bring back from a raid.
 
-## About
+The calculator automatically computes the total amount of raw (base) materials needed for complex gear and compares it against your current inventory. It ensures you only gather what you truly need, helping you plan for future crafting goals or your next raid with surgical precision.
 
-Pick what you want to craft, enter what you already own, and the page shows the raw materials you still need. Finished items you already own do not reduce the goal. Materials you already own are subtracted, unless you turn on stocking up and want to see the full amounts.
+## ✨ Key Features
+The Recycler (Smart Suggestions): New in v1.1. Automatically scans your stash and suggests which items can be dismantled to finish your current crafting goals.
 
-The page is static. Your goals, inventory, loadouts, and language stay in this browser only.
+Loadout Presets: New in v1.1. Build and save specific raid kits (gear/meds/ammo) to see their cost separately from your long-term objectives.
 
-## Features
+Recursive Recipe Breakdown: Breaks down complex items into multiple layers of base raw materials.
 
-- Crafting goals, with stack and single-item steppers that match the in-game counts.
-- Inventory with a credit total, plus filters for empty rows and rows the current craft still needs.
-- Saved loadouts. A loadout is priced on its own, and the quantity multiplier scales a whole kit.
-- Gun amplification for the weapons that have a tree. The install cost is included in the material totals. One-time research stays in the recipe breakdown and is not added again for every gun.
-- Totals and a recipe breakdown. The goals block lists items you can craft. Materials with no recipe appear once, under total raw materials.
-- Stocking up. Off, the list shows only what is still short. On, it shows the full amounts and keeps rows you have already collected.
-- Recycler. Search a material or click one in the totals to see which items can be broken down into it. The list is a reference. It does not change your inventory.
-- CSV export that follows the stocking-up switch.
-- English, Russian, German, and French.
-- Short tours for the first craft, loadouts, and the recycler.
-- Auto Sync with the separate StashSync app. When that app is running on the same computer, it fills your inventory and the equipped loadout from the game. Download it from the link on the page.
+Inventory Tracking & Stash Value: Save your current counts (localStorage) and see the total Credit (©) value of your entire hoard.
 
-## Files
+Hierarchical Tree View: Interactive breakdown of all intermediate materials and their components.
+
+Neon UI: High-contrast, sci-fi interface inspired by the aesthetic of ARC Raiders.
+
+## 🛠️ Technologies
+The project is built using a minimalist, high-performance stack:
+
+HTML5: Web page structure.
+
+CSS3: Custom neon, responsive design (using CSS Variables).
+
+JavaScript (Vanilla JS): Pure logic for recursive calculations, state management, and real-time DOM updates. No frameworks, no lag.
+
+## 🌐 How to Use
+
+### 📌 1) Set Crafting Goals
+Choose your target weapons or gear in the Crafting Goals panel. Adjust quantities to see the total material requirements update instantly.
+
+### 📦 2) Enter Your Inventory
+Enter your resource counts in the "My Inventory" tab. You can add items by Stacks (📦) or Single Units (🧩) to match your in-game view.
+
+### 📊 3) Check Total Resource Requirements
+If you are missing resources, check the Recycler list. It shows which items in your inventory can be dismantled to produce the missing materials.
+
+### 🔍 4) See Detailed Crafting Breakdown
+Use the Loadouts feature to calculate the cost of your signature raid kits. Use the multiplier to see the cost for 5x or 10x backup sets.
+
+---
+
+### 🧠 Why This Is Useful
+This tool is essential for maximizing raid efficiency, optimizing stash space, and managing complex multi-level crafting chains without the headache of manual math.
+
+## ⚙️ Installation and Setup
+The project is a standalone HTML file, making it easy to deploy.
+
+For Local Launch
+Clone the repository:
+
+## Bash
+```
+git clone https://github.com/Arccalc/arccalc.github.io
+cd arccalc.github.io
+```
+Ensure you have all the files (specifically index.html and the img folder with icons).
+
+Open the index.html file in your favorite web browser.
+
+🌐 Live Demo: Check out the live calculator hosted on GitHub Pages here: https://arccalc.github.io
+
+## Folder Structure
 
 ```
-index.html          page
-script.js           calculator
-items.js            items, recipes, icons
-i18n.js             interface text
-i18n_items.js       item names
-amplify.js          gun amplification
-style.css           layout
-tour.js, tour.css   guided tours
-img/                icons
-fonts/              local fonts
-bg.jpg              background
-setnja/             separate walking guide
+├── img/ # Folder with icons for resources and items
+
+├── index.html # Main calculator file (contains HTML/CSS/JS)
+
+└── README.md # This file
 ```
-
-## Run it
-
-The live calculator is at https://arccalc.github.io/
-
-To open a local copy, clone this repository and open `index.html` in a browser. Auto Sync on the public site talks to StashSync on the same computer. StashSync itself is a separate download: https://github.com/Arccalc/StashSync/releases/latest
-
-Game names and item art belong to Embark Studios. This repository is the calculator page.
