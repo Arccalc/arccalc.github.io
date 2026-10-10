@@ -95,11 +95,6 @@ Note: by default StashSync only accepts connections from `https://arccalc.github
 - Continued design and interface improvements.
 - New tools such as a quest tracker and item locations.
 
-## 🙏 Data and Credits
-
-- Amplification research data: arctracker.io.
-- Game content, names and images belong to Embark Studios.
-
 ## 💬 Feedback
 
 Bug reports and ideas are very welcome. Open an [issue](https://github.com/Arccalc/arccalc.github.io/issues) or leave a comment on the Reddit thread.
