@@ -8,7 +8,7 @@
 
     <link rel="icon" href="favicon.ico" sizes="any">
     <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=47">
+    <link rel="stylesheet" href="style.css?v=48">
 </head>
 
 <body>
@@ -19,7 +19,6 @@
         </a>
         <button type="button" class="tour-open-btn" data-i18n="tourHow">How to use</button>
         <a class="tour-open-btn tour-download-btn" data-i18n="tourDownload" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener">Download StashSync</a>
-        <a class="source-link" href="https://github.com/Arccalc/arccalc.github.io" target="_blank" rel="noopener" data-i18n="sourceLink" data-i18n-title="sourceLinkTitle" title="Source code">GitHub</a>
         <div id="tour-nudge" class="tour-nudge" hidden>
             <p data-i18n="tourNudge">New here? A short tour shows how to start (1 minute).</p>
             <div class="tour-nudge-actions">
@@ -47,14 +46,17 @@
         </div>
     </div>
 
-    <div class="lang-switcher lang-desktop" data-i18n-title="langLabel" title="Language">
-        <label for="lang-select" class="lang-label" data-i18n="langLabel">Language</label>
-        <select id="lang-select" data-i18n-aria="langLabel" aria-label="Language">
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-            <option value="de">Deutsch</option>
-            <option value="fr">Français</option>
-        </select>
+    <div class="lang-stack">
+        <div class="lang-switcher lang-desktop" data-i18n-title="langLabel" title="Language">
+            <label for="lang-select" class="lang-label" data-i18n="langLabel">Language</label>
+            <select id="lang-select" data-i18n-aria="langLabel" aria-label="Language">
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+                <option value="de">Deutsch</option>
+                <option value="fr">Français</option>
+            </select>
+        </div>
+        <a class="source-link" href="https://github.com/Arccalc/arccalc.github.io" target="_blank" rel="noopener" data-i18n="sourceLink" data-i18n-title="sourceLinkTitle" title="Source code">GitHub</a>
     </div>
 
     <div class="container">
@@ -70,7 +72,6 @@
                         </a>
                         <button type="button" class="tour-open-btn" data-i18n="tourHow">How to use</button>
                         <a class="tour-open-btn tour-download-btn" data-i18n="tourDownload" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener">Download StashSync</a>
-                        <a class="source-link" href="https://github.com/Arccalc/arccalc.github.io" target="_blank" rel="noopener" data-i18n="sourceLink" data-i18n-title="sourceLinkTitle" title="Source code">GitHub</a>
                     </div>
                     <span id="auto-sync-status" class="sync-status offline" data-i18n="autoSyncOffline" data-tour="sync-badge">Auto Sync: Offline</span>
                 </div>
@@ -253,7 +254,7 @@
     <script src="i18n.js?v=33"></script>
     <script src="amplify.js?v=2"></script>
     <script src="script.js?v=39"></script>
-    <link rel="stylesheet" href="tour.css?v=4">
+    <link rel="stylesheet" href="tour.css?v=5">
     <script src="tour.js?v=11"></script>
 </body>
 

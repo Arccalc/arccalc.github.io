@@ -262,6 +262,7 @@ a.source-link:focus-visible {
     padding-bottom: calc(10px + env(safe-area-inset-bottom));
 }
 
+body.tour-on .lang-stack,
 body.tour-on .lang-switcher {
     z-index: 5003;
 }
