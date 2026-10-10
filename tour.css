@@ -50,6 +50,36 @@ a.tour-open-btn {
     box-shadow: var(--neon-glow-blue-lg);
 }
 
+a.source-link {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 12px;
+    text-align: center;
+    text-decoration: none;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--color-text);
+    background: rgba(12, 18, 25, 0.45);
+    border: 1px solid rgba(0, 229, 255, 0.22);
+    border-radius: 6px;
+}
+
+a.source-link:hover {
+    color: var(--color-neon-blue);
+    border-color: rgba(0, 229, 255, 0.55);
+}
+
+a.source-link:focus-visible {
+    color: var(--color-neon-blue);
+    outline: 1px solid var(--color-neon-blue);
+    outline-offset: 2px;
+}
+
 .tour-open-btn:focus-visible,
 .tour-menu button:focus-visible,
 .tour-card button:focus-visible,
