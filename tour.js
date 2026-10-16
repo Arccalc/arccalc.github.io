@@ -16,6 +16,10 @@ const HELPER_URL = 'https://github.com/Arccalc/StashSync/releases/latest';
             { key: 'tourStart6', at: 'stock-toggle', enter() { A().showTab('.out-tab-btn', 'output-totals'); } },
             { key: 'tourStartDone' }
         ],
+        overlay: [
+            { key: 'tourOverlay1', at: 'tour-download', help: true, enter() { A().markDownload(); } },
+            { key: 'tourOverlayDone' }
+        ],
         loadouts: [
             { key: 'tourLoad1', at: 'tab-loadouts', until() { return !!document.querySelector('.tab-btn[data-tab="loadouts"].active'); } },
             { key: 'tourLoad2', at: 'loadout-slots', enter() { A().showLoadoutSlots(); } },

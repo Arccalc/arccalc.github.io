@@ -15,7 +15,7 @@ It breaks every recipe down through all its layers into raw (base) materials, co
 ## ✨ Key Features (V2.0)
 
 - **Recursive Recipe Breakdown:** breaks complex items into multiple layers of base materials, with an expandable tree of intermediate parts.
-- **[StashSync](https://github.com/Arccalc/StashSync) (optional, Windows):** a small companion app that reads your own stash and your equipped loadout and sends them to the calculator. See [details below](#-stashsync-optional-windows).
+- **[StashSync](https://github.com/Arccalc/StashSync) (optional, Windows):** a small companion app that reads your own stash and your equipped loadout and sends them to the calculator. It can also show a goals overlay on screen during a raid. See [details below](#-stashsync-optional-windows).
 - **Rebuilt interface:** clearer totals, crafting goals, inventory and loadouts. Every material shows what you need and what you have, color-coded: red means none, orange means some, green means covered.
 - **Frozen Trail data:** the new gear, materials, keys and blueprints (Bantam, Stiletto, Yank Grenade, Grappling Hook, Tether Launcher, the cameras, the Pendola Pass keys and more), with updated sell prices and recycle results.
 - **Gun amplification:** for weapons with an upgrade tree, the cost to install a perk is added to the material totals. One-time research stays in the recipe breakdown and is not charged again for every copy of the gun.
@@ -23,12 +23,12 @@ It breaks every recipe down through all its layers into raw (base) materials, co
 - **Loadouts:** build and save raid kits, see their cost separately from your long-term goals, and sync with the gear you have equipped.
 - **Stocking up:** a switch that shows full amounts (including what you already own) or only what is still missing. The CSV export follows the same switch.
 - **Four languages:** English, Russian, German and French. Item names follow the language you pick.
-- **Built-in manuals:** a "How to use" button opens short guided walkthroughs for your first craft, loadouts and the Recycler.
+- **Built-in manuals:** a "How to use" button opens short guided walkthroughs for your first craft, loadouts, the Recycler and the goals overlay.
 - **Stash value and CSV export:** see the total credit (©) value of your inventory and export your shopping list.
 
 ## 📥 StashSync (optional, Windows)
 
-StashSync reads your own ARC Raiders stash and equipped loadout and fills the calculator for you, so you don't have to type your inventory by hand. The calculator works fine without it.
+StashSync reads your own ARC Raiders stash and equipped loadout and fills the calculator for you, so you don't have to type your inventory by hand. The calculator works fine without it. In the StashSync window, **Goals overlay** keeps the materials for your craft goals on screen during a raid. Turn it on there.
 
 - Windows and the Steam edition of the game only.
 - Unofficial, not affiliated with Embark. It only reads your own stash and sends item counts only to your own browser on your PC.
@@ -90,7 +90,6 @@ Note: by default StashSync only accepts connections from `https://arccalc.github
 
 ## 🗺️ Roadmap
 
-- Overlay tracker: shows on screen which resources you still need to find and updates as you find them.
 - More languages.
 - Continued design and interface improvements.
 - New tools such as a quest tracker and item locations.
