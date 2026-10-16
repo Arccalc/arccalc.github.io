@@ -2956,6 +2956,31 @@ h2.panel-title.total-header {
     box-shadow: var(--neon-glow-blue-sm);
 }
 
+.amp-bag {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 8px;
+    vertical-align: middle;
+}
+
+.amp-mat {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.amp-mat-icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+
+.amp-mat-qty {
+    font-family: 'Share Tech Mono', monospace;
+}
+
 .amp-chip-cost,
 .amp-chip-done,
 .amp-note,

@@ -145,13 +145,42 @@ function ampSelected(name) {
     return Array.isArray(list) ? list.filter(p => known.includes(p)) : [];
 }
 
-function ampBagText(bag) {
-    return Object.entries(bag || {}).map(([m, q]) => `×${q} ${tItem(m)}`).join(', ');
+function ampIcon(name) {
+    const img = document.createElement('img');
+    img.className = 'amp-mat-icon';
+    img.alt = '';
+    img.decoding = 'async';
+    img.loading = 'lazy';
+    const file = (typeof IMAGE_MAP !== 'undefined' && IMAGE_MAP[name]) ? IMAGE_MAP[name] : '';
+    img.src = file ? `img/${file}` : 'img/default.png';
+    img.addEventListener('error', () => { img.src = 'img/default.png'; }, { once: true });
+    return img;
 }
 
-function ampCostText(perk) {
-    const cost = (typeof AMPLIFY !== 'undefined' && AMPLIFY.perks && AMPLIFY.perks[perk]) || {};
-    return ampBagText(cost);
+function ampBagLine(bag) {
+    const line = document.createElement('span');
+    line.className = 'amp-bag';
+    Object.entries(bag || {}).forEach(([m, q]) => {
+        if (!(q > 0)) return;
+        const bit = document.createElement('span');
+        bit.className = 'amp-mat';
+        const qty = document.createElement('span');
+        qty.className = 'amp-mat-qty';
+        qty.textContent = `×${q}`;
+        const nm = document.createElement('span');
+        nm.textContent = tItem(m);
+        bit.append(ampIcon(m), qty, nm);
+        line.append(bit);
+    });
+    return line;
+}
+
+function fillAmpCost(node, key, bag) {
+    const parts = String(t(key, { cost: '\u0000' })).split('\u0000');
+    if (parts[0]) node.append(document.createTextNode(parts[0]));
+    node.append(ampBagLine(bag));
+    const tail = parts.slice(1).join('\u0000');
+    if (tail) node.append(document.createTextNode(tail));
 }
 
 function ampInstallSpec(name) {
@@ -250,13 +279,13 @@ function ampPerkBlock(name) {
         const nm = el('span', 'amp-chip-name');
         nm.textContent = perk;
         const cost = el('span', 'amp-chip-cost');
-        cost.textContent = t('ampChipResearch', { cost: ampCostText(perk) });
+        fillAmpCost(cost, 'ampChipResearch', (typeof AMPLIFY !== 'undefined' && AMPLIFY.perks && AMPLIFY.perks[perk]) || {});
         btn.append(nm, cost);
         const spec = ampInstallSpec(name);
         const fit = spec && spec.perks && spec.perks[perk];
         if (fit) {
             const line = el('span', 'amp-chip-cost');
-            line.textContent = t('ampChipInstall', { cost: ampBagText(fit) });
+            fillAmpCost(line, 'ampChipInstall', fit);
             btn.append(line);
         }
         chips.appendChild(btn);
@@ -265,7 +294,7 @@ function ampPerkBlock(name) {
     wrap.append(chips);
     if (spec && spec.module) {
         const mod = el('p', 'amp-data');
-        mod.textContent = t('ampChipInstall', { cost: ampBagText(spec.module) });
+        fillAmpCost(mod, 'ampChipInstall', spec.module);
         wrap.append(mod);
     }
     const credit = el('p', 'amp-data');
@@ -461,6 +490,105 @@ function calculateTotal() {
 
     if (typeof renderSmartSuggestions === 'function') renderSmartSuggestions();
     arcEmit('calc');
+    pushGoalOverlay();
+}
+
+let goalSocket = null;
+let lastGoalPayload = '';
+const goalIcon64 = Object.create(null);
+
+function goalIconFile(name) {
+    const map = (typeof IMAGE_MAP !== 'undefined') ? IMAGE_MAP : null;
+    if (!map) return '';
+    return map[name] || map[getBaseName(name)] || '';
+}
+
+function goalIconName(name) {
+    const file = goalIconFile(name);
+    if (!file || !/^[A-Za-z0-9._-]+\.png$/i.test(file)) return '';
+    return file;
+}
+
+function loadGoalIcon(name) {
+    const file = goalIconFile(name);
+    if (!file) {
+        goalIcon64[name] = '';
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            try {
+                const side = 96;
+                const canvas = document.createElement('canvas');
+                canvas.width = side;
+                canvas.height = side;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    goalIcon64[name] = '';
+                    resolve();
+                    return;
+                }
+                ctx.clearRect(0, 0, side, side);
+                ctx.drawImage(img, 0, 0, side, side);
+                const url = canvas.toDataURL('image/png');
+                goalIcon64[name] = url.slice(url.indexOf(',') + 1);
+            } catch (e) {
+                goalIcon64[name] = '';
+            }
+            resolve();
+        };
+        img.onerror = () => {
+            goalIcon64[name] = '';
+            resolve();
+        };
+        img.src = `img/${file}`;
+    });
+}
+
+function ensureGoalIcons(names) {
+    const missing = names.filter((name) => goalIcon64[name] === undefined);
+    if (!missing.length) return;
+    missing.forEach((name) => { goalIcon64[name] = null; });
+    Promise.all(missing.map(loadGoalIcon)).then(() => {
+        lastGoalPayload = '';
+        pushGoalOverlay();
+    });
+}
+
+function goalOverlayPayload() {
+    const items = [];
+    const names = [];
+    // «Собираю впрок» — те же строки, что «ВСЕГО СЫРЬЯ»: полное количество, собранное остаётся.
+    // Без галки — только остаток, нули скрыты.
+    const source = stockAhead ? lastGoalsGross : lastGoalsNeed;
+    Object.keys(source || {}).forEach((name) => {
+        const qty = source[name] || 0;
+        const left = stockAhead
+            ? Math.max(0, Math.round(qty))
+            : Math.max(0, Math.round(qty - (lastHave[name] || 0)));
+        if (left > 0) {
+            names.push(name);
+            const icon = (typeof goalIcon64[name] === 'string') ? goalIcon64[name] : '';
+            items.push({ name, label: tItem(name), left, icon, file: goalIconName(name) });
+        }
+    });
+    items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+    ensureGoalIcons(names);
+    const page = (location.protocol === 'file:') ? location.href.split('#')[0].split('?')[0] : '';
+    return JSON.stringify({
+        type: 'overlay',
+        page,
+        items: items.slice(0, 40)
+    });
+}
+
+function pushGoalOverlay() {
+    if (!goalSocket || goalSocket.readyState !== 1) return;
+    const payload = goalOverlayPayload();
+    if (payload === lastGoalPayload) return;
+    lastGoalPayload = payload;
+    try { goalSocket.send(payload); } catch (e) {}
 }
 
 // Прямое сырьё уменьшается только после того, как инвентарь закрыл сырьё,
@@ -2266,6 +2394,9 @@ function initAutoSync() {
                 clearTimeout(reconnectTimeout);
                 reconnectTimeout = null;
             }
+            goalSocket = socket;
+            lastGoalPayload = '';
+            pushGoalOverlay();
         };
 
         socket.onmessage = (event) => {
@@ -2277,6 +2408,7 @@ function initAutoSync() {
         };
 
         socket.onclose = () => {
+            if (goalSocket === socket) goalSocket = null;
             if (generation !== socketGeneration) return;
             statusEl.className = 'sync-status offline';
             statusEl.innerText = t('autoSyncOffline');
