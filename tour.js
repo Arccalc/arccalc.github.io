@@ -8,6 +8,7 @@ const HELPER_URL = 'https://github.com/Arccalc/StashSync/releases/latest';
             { key: 'tourStart1', at: ['goals-search', 'goals-category'], enter() { A().showTab('.tab-btn', 'craft-goals'); }, until() { return !!(document.getElementById('search-input')?.value.trim() || document.querySelector('#items-container .items-list-content:not(.collapsed)')); } },
             { key: 'tourStart2', at: ['goals-item-add', 'goals-tier'], enter() { A().openDemoPlus(); }, until() { return A().goalQty() > 0; } },
             { key: 'tourStart3', at: ['totals-craft', 'totals-raw'], enter() { A().revealGoalTotals(); } },
+            { key: 'tourOverlay1', at: 'tour-download', help: true, enter() { A().markDownload(); } },
             { key: 'tourStartColors', at: ['totals-craft', 'totals-raw'] },
             { key: 'tourStartRecipe', at: ['totals-recipe', 'totals-recipe-body'], enter() { A().openRecipe(); } },
             { key: 'tourStart4', at: 'tab-inventory', until() { return !!document.querySelector('.tab-btn[data-tab="inventory-input"].active'); } },
@@ -15,10 +16,6 @@ const HELPER_URL = 'https://github.com/Arccalc/StashSync/releases/latest';
             { key: 'tourStart7', at: ['tour-download', 'sync-badge'], help: true, showSync: true, enter() { A().markDownload(); } },
             { key: 'tourStart6', at: 'stock-toggle', enter() { A().showTab('.out-tab-btn', 'output-totals'); } },
             { key: 'tourStartDone' }
-        ],
-        overlay: [
-            { key: 'tourOverlay1', at: 'tour-download', help: true, enter() { A().markDownload(); } },
-            { key: 'tourOverlayDone' }
         ],
         loadouts: [
             { key: 'tourLoad1', at: 'tab-loadouts', until() { return !!document.querySelector('.tab-btn[data-tab="loadouts"].active'); } },

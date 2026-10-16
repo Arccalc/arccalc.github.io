@@ -23,7 +23,7 @@ It breaks every recipe down through all its layers into raw (base) materials, co
 - **Loadouts:** build and save raid kits, see their cost separately from your long-term goals, and sync with the gear you have equipped.
 - **Stocking up:** a switch that shows full amounts (including what you already own) or only what is still missing. The CSV export follows the same switch.
 - **Four languages:** English, Russian, German and French. Item names follow the language you pick.
-- **Built-in manuals:** a "How to use" button opens short guided walkthroughs for your first craft, loadouts, the Recycler and the goals overlay.
+- **Built-in manuals:** a "How to use" button opens short guided walkthroughs for your first craft, loadouts and the Recycler.
 - **Stash value and CSV export:** see the total credit (©) value of your inventory and export your shopping list.
 
 ## 📥 StashSync (optional, Windows)
