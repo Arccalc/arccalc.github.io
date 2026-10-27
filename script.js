@@ -561,25 +561,28 @@ function goalOverlayPayload() {
     const names = [];
     // «Собираю впрок» — те же строки, что «ВСЕГО СЫРЬЯ»: полное количество, собранное остаётся.
     // Без галки — только остаток, нули скрыты.
+    // StashSync 0.3 shows progress, so collected rows come too (left 0, with need / have).
+    // StashSync 0.2 skips rows with left 0; open rows stay first for it.
     const source = stockAhead ? lastGoalsGross : lastGoalsNeed;
     Object.keys(source || {}).forEach((name) => {
         const qty = source[name] || 0;
         const left = stockAhead
             ? Math.max(0, Math.round(qty))
             : Math.max(0, Math.round(qty - (lastHave[name] || 0)));
-        if (left > 0) {
+        const need = Math.max(0, Math.round(qty));
+        if (need > 0) {
             names.push(name);
             const icon = (typeof goalIcon64[name] === 'string') ? goalIcon64[name] : '';
-            items.push({ name, label: tItem(name), left, icon, file: goalIconName(name) });
+            items.push({ name, label: tItem(name), left, need, have: Math.max(0, need - left), icon, file: goalIconName(name) });
         }
     });
-    items.sort((a, b) => a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
+    items.sort((a, b) => (b.left > 0) - (a.left > 0) || a.label.localeCompare(b.label, undefined, { sensitivity: 'base' }));
     ensureGoalIcons(names);
     const page = (location.protocol === 'file:') ? location.href.split('#')[0].split('?')[0] : '';
     return JSON.stringify({
         type: 'overlay',
         page,
-        items: items.slice(0, 40)
+        items: items.slice(0, 80)
     });
 }
 
@@ -597,13 +600,6 @@ function syncStockAheadNote() {
     const note = document.getElementById('stock-ahead-note');
     if (!note || typeof t !== 'function') return;
     note.textContent = t(stockAhead ? 'stockAheadOn' : 'stockAheadOff');
-}
-
-function directRemaining(name, directQty, rawMap, have) {
-    const totalQty = rawMap[name] || 0;
-    const owned = (have && have[name]) || 0;
-    const hidden = Math.max(0, totalQty - directQty);
-    return Math.max(0, directQty - Math.max(0, owned - hidden));
 }
 
 function coverageState(need, have) {
@@ -1216,49 +1212,25 @@ function exportToCSV() {
         return reqs;
     };
 
+    // Same file as calc.js csv(): goals, then bench parts and raw still missing (stocking up: full amounts), "name — qty".
     const directReqs = getDirect(combinedSource);
-    const ingredients = Object.entries(directReqs).filter(([n]) => isCraftable(n)).sort();
-    const baseRes = Object.entries(directReqs).filter(([n]) => !isCraftable(n)).sort();
-
     const needMap = tab === 'craft-goals' ? lastGoalsNeed : (tab === 'loadouts' ? lastLdtNeed : lastCombinedNeed);
     const grossMap = tab === 'craft-goals' ? lastGoalsGross : (tab === 'loadouts' ? lastLdtGross : lastCombinedGross);
     const rawMap = stockAhead ? grossMap : needMap;
-    const totalRaw = Object.entries(rawMap).filter(([, q]) => q > 0).sort();
     const owned = (name) => (lastHave && lastHave[name]) || 0;
-
-    const addRow = (rows, name, full, net) => {
-        const have = owned(name);
-        if (stockAhead) {
-            if (full <= 0) return;
-            rows.push(`"${tItem(name)}","${full} ${t('csvHave', { have })}"`);
-        } else if (net > 0) {
-            rows.push(`"${tItem(name)}",${net}`);
-        }
-    };
-
-    const goalRows = [];
-    ingredients.forEach(([n, q]) => addRow(goalRows, n, q, Math.max(0, q - owned(n))));
-    const directRows = [];
-    baseRes.forEach(([n, q]) => addRow(directRows, n, q, directRemaining(n, q, needMap, lastHave)));
-    const totalRows = [];
-    totalRaw.forEach(([n, q]) => addRow(totalRows, n, q, Math.max(0, q - owned(n))));
-
-    let csv = "\uFEFF" + t('csvHeader') + "\n";
-
-    if (goalRows.length > 0) {
-        csv += t('csvGoals') + "\n";
-        csv += goalRows.join("\n") + "\n\n";
-    }
-
-    if (directRows.length > 0) {
-        csv += t('csvDirectRaw') + "\n";
-        csv += directRows.join("\n") + "\n\n";
-    }
-
-    if (totalRows.length > 0) {
-        csv += t('csvTotalRaw') + "\n";
-        csv += totalRows.join("\n") + "\n";
-    }
+    const line = (text, n) => { const s = `${text} — ${n}`; return /[",;]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const missing = (entries) => entries.map(([name, q]) => ({ text: tItem(name), n: stockAhead ? q : Math.max(0, q - owned(name)) }))
+        .filter(r => r.n > 0).sort((a, b) => b.n - a.n || a.text.localeCompare(b.text));
+    const goalLines = Object.entries(combinedSource).filter(([, q]) => q > 0)
+        .map(([k, q]) => { const { name, tier } = parseKey(k); return { text: tItem(name) + (tier > 1 ? ' ' + ROMANS[tier] : ''), n: q }; })
+        .sort((a, b) => a.text.localeCompare(b.text));
+    const sections = [
+        [t('csvGoals'), goalLines],
+        [t('csvCraft'), missing(Object.entries(directReqs).filter(([n]) => isCraftable(n)))],
+        [t('csvGather'), missing(Object.entries(rawMap).filter(([, q]) => q > 0))]
+    ];
+    const csv = '\uFEFF' + sections.filter(([, rows]) => rows.length)
+        .map(([title, rows]) => [title, ...rows.map(r => line(r.text, r.n))].join('\r\n')).join('\r\n\r\n') + '\r\n';
 
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);

@@ -418,3 +418,59 @@ body.tour-on .lang-switcher {
         min-width: 44px;
     }
 }
+
+/* Switch to the new design (index.html): top-left corner, same place as «Classic design» on index.html.
+   Not a .tour-open-btn: tour.js opens its menu on those. */
+a.design-switch-btn {
+    position: absolute;
+    top: 16px;
+    left: 24px;
+    z-index: 2001;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    background: #45D3E6;
+    color: #0E1630;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+    box-shadow: 0 0 0 3px rgba(69, 211, 230, .25), 0 6px 18px rgba(69, 211, 230, .35);
+}
+
+a.design-switch-btn:hover {
+    background: #7FE2EF;
+}
+
+/* The buttons under the switch move down; the rest of the page stays where it was. */
+.tour-anchor-desktop { top: 60px; gap: 6px; }
+
+
+/* Ko-fi: only the «Buy me a coffee» button, no «Support dev» label, so the left column is narrower. */
+.kofi-widget::after { content: none; display: none; }
+.kofi-widget { justify-content: center; }
+/* Compact left column on desktop: it ends above the panels and does not cover the title. */
+.tour-anchor-desktop .kofi-widget { padding: 6px 12px; }
+.tour-anchor-desktop .kofi-widget img { height: 28px !important; }
+.tour-anchor-desktop .tour-open-btn { padding: 8px 12px; font-size: 11px; letter-spacing: 0.5px; }
+
+/* First-visit tour offer: a floating card in the bottom-right corner, so it never covers the panel titles. */
+#tour-nudge {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(320px, calc(100vw - 32px));
+    z-index: 2002;
+    padding: 14px 16px;
+}
+
+@media (max-width: 600px) {
+    #tour-nudge { right: 16px; bottom: 16px; }
+}

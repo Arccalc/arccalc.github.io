@@ -123,11 +123,9 @@ const UI_I18N = {
         cat_Misc: 'Misc',
         showMoreSources: '{n} more sources',
         hideSources: 'Hide',
-        csvHeader: 'Resource Name,Quantity',
-        csvHave: '(Have: {have})',
-        csvGoals: '--- RESOURCES FOR GOALS ---',
-        csvDirectRaw: '--- DIRECT RAW MATERIALS ---',
-        csvTotalRaw: '--- TOTAL RAW MATERIALS (ALL INCLUSIVE) ---',
+        csvGoals: 'Goals:',
+        csvCraft: 'Craft at the workbench:',
+        csvGather: 'Gather:',
         pageTitle: 'ARC Raiders // Advanced Resource Calculator',
         supportDev: 'SUPPORT DEV',
         ampTier: 'V · Amplified',
@@ -299,11 +297,9 @@ const UI_I18N = {
         cat_Misc: 'Разное',
         showMoreSources: 'Ещё {n} источников',
         hideSources: 'Скрыть',
-        csvHeader: 'Название ресурса,Количество',
-        csvHave: '(Есть: {have})',
-        csvGoals: '--- РЕСУРСЫ ДЛЯ ЦЕЛЕЙ ---',
-        csvDirectRaw: '--- ПРЯМОЕ СЫРЬЁ ---',
-        csvTotalRaw: '--- ВСЕГО СЫРЬЯ (ПОЛНЫЙ РАСКЛАД) ---',
+        csvGoals: 'Цели:',
+        csvCraft: 'Скрафтить на верстаке:',
+        csvGather: 'Добыть:',
         pageTitle: 'ARC Raiders // Калькулятор ресурсов',
         supportDev: 'ПОДДЕРЖАТЬ',
         ampTier: 'V · Amplified',
@@ -475,11 +471,9 @@ const UI_I18N = {
         cat_Misc: 'Verschiedenes',
         showMoreSources: 'Noch {n} Quellen',
         hideSources: 'Ausblenden',
-        csvHeader: 'Ressourcenname,Menge',
-        csvHave: '(Besitz: {have})',
-        csvGoals: '--- RESSOURCEN FÜR ZIELE ---',
-        csvDirectRaw: '--- DIREKTE ROHSTOFFE ---',
-        csvTotalRaw: '--- ROHSTOFFE GESAMT (VOLLSTÄNDIG) ---',
+        csvGoals: 'Ziele:',
+        csvCraft: 'An der Werkbank craften:',
+        csvGather: 'Sammeln:',
         pageTitle: 'ARC Raiders // Ressourcenrechner',
         supportDev: 'UNTERSTÜTZEN',
         ampTier: 'V · Amplified',
@@ -651,11 +645,9 @@ const UI_I18N = {
         cat_Misc: 'Divers',
         showMoreSources: 'Encore {n} sources',
         hideSources: 'Masquer',
-        csvHeader: 'Nom de la ressource,Quantité',
-        csvHave: '(Possédé : {have})',
-        csvGoals: '--- RESSOURCES POUR OBJECTIFS ---',
-        csvDirectRaw: '--- MATIÈRES BRUTES DIRECTES ---',
-        csvTotalRaw: '--- TOTAL MATIÈRES BRUTES (COMPLET) ---',
+        csvGoals: 'Objectifs :',
+        csvCraft: 'Fabriquer à l’établi :',
+        csvGather: 'Récolter :',
         pageTitle: 'ARC Raiders // Calculateur de ressources',
         supportDev: 'SOUTENIR',
         ampTier: 'V · Amplified',
@@ -740,8 +732,7 @@ function detectLang() {
         const saved = localStorage.getItem(LANG_KEY);
         if (saved && SUPPORTED_LANGS.includes(saved)) return saved;
     } catch (_) {}
-    const nav = (navigator.language || 'en').slice(0, 2).toLowerCase();
-    if (SUPPORTED_LANGS.includes(nav)) return nav;
+    // No saved choice: English, whatever the browser language.
     return 'en';
 }
 
