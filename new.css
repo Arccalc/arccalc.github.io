@@ -239,6 +239,15 @@ a{color:#45D3E6}a:hover{color:#8BE6F1}
 .p-hl:hover .ic-globe-m{animation:ic-spin 1s ease-in-out}
 .p-hl:hover .ic-code-l{animation:ic-left .5s ease}
 .p-hl:hover .ic-code-r{animation:ic-right .5s ease}
+/* StashSync link: «StashSync» rolls up to «New version» and back until the link is clicked. */
+.p-ssl{display:inline-grid;height:20px;line-height:20px;overflow:hidden;text-align:center}
+.p-ssl>span{grid-area:1/1}
+.p-ssl-a{animation:ss-a 10s ease-in-out 2s infinite}
+.p-ssl-b{color:#7FE3F0;opacity:0;transform:translateY(100%);animation:ss-b 10s ease-in-out 2s infinite}
+@keyframes ss-a{0%,62%{opacity:1;transform:translateY(0)}68%,90%{opacity:0;transform:translateY(-100%)}91%{opacity:0;transform:translateY(100%)}97%,100%{opacity:1;transform:translateY(0)}}
+@keyframes ss-b{0%,62%{opacity:0;transform:translateY(100%)}68%,90%{opacity:1;transform:translateY(0)}96%{opacity:0;transform:translateY(-100%)}97%,100%{opacity:0;transform:translateY(100%)}}
+/* Phones show icons only, so the hint is a small dot there. */
+@media (max-width:700px){.p-hl-new{position:relative}.p-hl-new::after{content:'';position:absolute;top:9px;right:7px;width:6px;height:6px;border-radius:50%;background:#7FE3F0}}
 @keyframes ic-drop{0%{transform:translateY(0)}35%{transform:translateY(-3px);opacity:0}36%{transform:translateY(-4px);opacity:0}70%{transform:translateY(1px);opacity:1}100%{transform:translateY(0)}}
 @keyframes ic-base{0%,30%{transform:scaleX(1)}60%{transform:scaleX(.6)}100%{transform:scaleX(1)}}
 @keyframes ic-wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}55%{transform:rotate(10deg)}80%{transform:rotate(-4deg)}}

@@ -8,8 +8,12 @@
     const KEYS = {
         SEL: 'arcRaidersSelection', INV: 'arcRaidersInventory', LDT: 'arcRaidersLoadout', SLDT: 'arcRaidersSavedLoadouts',
         AMP: 'arcRaidersAmplifyPicks', STOCK: 'arcRaidersStockAhead', KIT: 'arcNewKit', TOUR: 'arcNewTourBackup',
-        DESIGN: 'arcDesign', VOTE: 'arcDesignVote', TOUR_SEEN: 'arcTourSeen', SYNC_AT: 'arcSyncAt'
+        DESIGN: 'arcDesign', VOTE: 'arcDesignVote', TOUR_SEEN: 'arcTourSeen', SYNC_AT: 'arcSyncAt', SS_SEEN: 'arcStashSyncSeen'
     };
+    // StashSync release the header link advertises until clicked; bump it to show the hint again.
+    const SS_NEW = '0.3.0';
+    let ssNew = true;
+    try { ssNew = localStorage.getItem(KEYS.SS_SEEN) !== SS_NEW; } catch (e) { /* ignore */ }
     // Time of the last stash that came from StashSync (kept across reloads).
     let syncAt = 0;
     try { syncAt = Number(localStorage.getItem(KEYS.SYNC_AT)) || 0; } catch (e) { /* ignore */ }
@@ -251,7 +255,7 @@
 <nav aria-label="${esc(t('ndService'))}" style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px; position: relative">
 <span class="p-dd"><button type="button" class="p-sync ${sync ? 'p-sync-on' : 'p-sync-off'}${S.syncMenu ? ' p-sync-open' : ''}" data-tour="sync" data-act="toggleSyncMenu" aria-expanded="${S.syncMenu}" aria-haspopup="dialog" title="${esc(sync && syncAt ? t('ndSyncAt', { time: fmtTime(syncAt) }) : t(sync ? 'ndSyncOnHint' : 'ndSyncOffHint'))}"><span class="p-sync-dot"></span>Auto Sync · ${sync ? 'online' : 'offline'}</button>${S.syncMenu ? syncMenuHtml() : ''}</span>
 <span class="p-hsep" aria-hidden="true"></span>
-<a class="p-hl" data-tour="dl" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener"><svg class="ic-dl" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="ic-dl-arrow" d="M8 2v8M4.5 6.5L8 10l3.5-3.5"></path><path class="ic-dl-base" d="M2.5 13.5h11"></path></g></svg>StashSync</a>
+<a class="p-hl${ssNew ? ' p-hl-new' : ''}" data-tour="dl" data-act="ssSeen" href="https://github.com/Arccalc/StashSync/releases/latest" target="_blank" rel="noopener"><svg class="ic-dl" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path class="ic-dl-arrow" d="M8 2v8M4.5 6.5L8 10l3.5-3.5"></path><path class="ic-dl-base" d="M2.5 13.5h11"></path></g></svg>${ssNew ? `<span class="p-ssl"><span class="p-ssl-a">StashSync</span><span class="p-ssl-b" aria-hidden="true">${esc(t('ndNewVersion'))}</span></span>` : 'StashSync'}</a>
 ${anyMenu ? `<button type="button" class="p-menu-bg" aria-label="${esc(t('ndCloseMenu'))}" data-act="closeMenus"></button>` : ''}
 <span class="p-dd"><button class="p-hl${S.tourMenu ? ' p-hl-on' : ''}" type="button" data-act="toggleTourMenu" aria-expanded="${S.tourMenu}" aria-haspopup="true"><svg class="ic-help" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2" fill="none" stroke="currentColor" stroke-width="1.5"></circle><path class="ic-help-q" d="M6.3 6.2a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1M8 11.2v.1" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"></path></svg>${esc(t('ndHowTo'))}</button>
 ${S.tourMenu ? `<div class="p-menu" role="menu" aria-label="${esc(t('ndHowTo'))}">${tours.map(x => `<button type="button" role="menuitem" class="p-mitem" data-act="startTour" data-id="${x[0]}"><span style="font-weight: 600">${esc(t(x[1]))}</span><span style="font-size: 13px; color: #A9A3C7">${esc(t(x[2]))}</span></button>`).join('')}</div>` : ''}</span>
@@ -995,6 +999,13 @@ ${S.toast ? `<div class="p-toast" role="status"><span>${esc(S.toast)}</span>${un
         tourNext: () => nextStep(),
         tourBack: () => goStep(S.tour.i - 1, -1),
         undo: () => { const f = undoFn; undoFn = null; clearTimeout(toastTimer); S.toast = ''; if (f) f(); else render(); },
+        // The link opens normally; this only stops the «new version» hint for good.
+        ssSeen: () => {
+            if (!ssNew) return;
+            ssNew = false;
+            try { localStorage.setItem(KEYS.SS_SEEN, SS_NEW); } catch (e) { /* ignore */ }
+            render();
+        },
         toOld: (el, ev) => { ev.preventDefault(); try { localStorage.setItem(KEYS.DESIGN, 'old'); } catch (e) { /* ignore */ } goal('design_switch_old'); location.href = 'classic.html'; },
         vote: (el) => {
             const v = el.dataset.id;
