@@ -999,7 +999,13 @@ ${S.toast ? `<div class="p-toast" role="status"><span>${esc(S.toast)}</span>${un
         vote: (el) => {
             const v = el.dataset.id;
             S.vote = false;
-            if (v === 'later') { write(KEYS.VOTE, { later: Date.now() }); render(); return; }
+            if (v === 'later') {
+                write(KEYS.VOTE, { later: Date.now() });
+                goal('design_vote_later');
+                render();
+                setTimeout(showVote, VOTE_AGAIN);
+                return;
+            }
             write(KEYS.VOTE, { voted: v, at: Date.now() });
             goal(v === 'new' ? 'design_vote_new' : 'design_vote_old', { design_vote: v });
             say(t('ndVoteThanks'));
@@ -1159,18 +1165,27 @@ ${S.toast ? `<div class="p-toast" role="status"><span>${esc(S.toast)}</span>${un
         window.ym(METRIKA_ID, 'init', { accurateTrackBounce: true, trackLinks: true, webvisor: false, clickmap: false });
         goal('design_open_new');
     }
-    // The design vote is off since the new design became the default; ?vote still shows it for testing.
+    // Design vote: shown to everyone who has not voted yet; «Not now» brings it back after VOTE_AGAIN.
+    // ?vote shows it at once for testing.
+    const VOTE_AGAIN = 60 * 1000;
     function scheduleVote() {
-        if (/[?&]vote\b/.test(location.search)) setTimeout(() => showVote(true), 1000);
+        const force = /[?&]vote\b/.test(location.search);
+        const v = read(KEYS.VOTE, {});
+        if (!force && v.voted) return;
+        const again = !force && v.later ? v.later + VOTE_AGAIN - Date.now() : 0;
+        setTimeout(() => showVote(force), force ? 1000 : Math.max(8000, again));
     }
     // The vote never follows another card or a tour straight away: it waits VOTE_PAUSE after them.
     const VOTE_PAUSE = 20000;
-    let voteAt = 0;
+    let voteAt = 0, voteShown = false;
     function showVote(force) {
         if (!force && read(KEYS.VOTE, {}).voted) return;
         const wait = voteAt - Date.now();
         if (wait > 0) { setTimeout(() => showVote(force), wait); return; }
+        if (S.vote) return;
         S.vote = true; render();
+        // once per page load, so Metrika can count how many people saw the vote
+        if (!voteShown) { voteShown = true; goal('design_vote_shown'); }
     }
     function holdVote() {
         voteAt = Date.now() + VOTE_PAUSE;
