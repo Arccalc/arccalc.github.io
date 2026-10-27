@@ -474,3 +474,21 @@ a.design-switch-btn:hover {
 @media (max-width: 600px) {
     #tour-nudge { right: 16px; bottom: 16px; }
 }
+
+/* Design vote (design-switch.js): the same corner as the tour offer, never at the same time. */
+#design-vote {
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 24px;
+    bottom: 24px;
+    width: min(340px, calc(100vw - 32px));
+    z-index: 2002;
+    padding: 14px 16px;
+}
+
+#design-vote .tour-nudge-actions { flex-wrap: wrap; }
+
+@media (max-width: 600px) {
+    #design-vote { right: 16px; bottom: 16px; }
+}
